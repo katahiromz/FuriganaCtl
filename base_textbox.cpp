@@ -83,8 +83,9 @@ void base_textbox_impl_t::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (m_font == hfont)
         return;
 
-    if (m_font)
+    if (m_own_font && m_font)
         ::DeleteObject(m_font);
+
     m_font = hfont;
     m_own_font = false;
 
@@ -245,14 +246,18 @@ void base_textbox_t::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     if (m_pimpl->m_text_cache_capacity >= 8 * required_capacity) {
         delete[] m_pimpl->m_text_cache;
         m_pimpl->m_text_cache = new(std::nothrow) wchar_t[required_capacity];
+        if (!m_pimpl->m_text_cache) {
+            out_of_memory();
+            m_pimpl->m_text_cache_capacity = 0;
+            return;
+        }
         m_pimpl->m_text_cache_capacity = required_capacity;
-    }
-
-    if (required_capacity > m_pimpl->m_text_cache_capacity) {
+    } else if (required_capacity > m_pimpl->m_text_cache_capacity) {
         delete[] m_pimpl->m_text_cache;
         m_pimpl->m_text_cache = new(std::nothrow) wchar_t[required_capacity];
         if (!m_pimpl->m_text_cache) {
             out_of_memory();
+            m_pimpl->m_text_cache_capacity = 0;
             return;
         }
         m_pimpl->m_text_cache_capacity = required_capacity;
