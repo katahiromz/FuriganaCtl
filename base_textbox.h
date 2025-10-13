@@ -32,7 +32,7 @@ public:
 
     static BOOL register_class(HINSTANCE inst, LPCWSTR class_name = base_textbox_t::get_class_name(), WNDPROC wndproc = base_textbox_t::window_proc);
     static BOOL unregister_class(HINSTANCE inst, LPCWSTR class_name = base_textbox_t::get_class_name());
-    void subclass(HWND hwnd, WNDPROC old_wndproc = base_textbox_t::window_proc);
+    void subclass(HWND hwnd, WNDPROC new_wndproc = base_textbox_t::window_proc);
     void unsubclass();
 
 protected:

@@ -32,7 +32,7 @@ struct base_textbox_impl_t {
         m_hwndParent = hwnd ? ::GetParent(hwnd) : nullptr;
     }
     ~base_textbox_impl_t() {
-        if (m_font)
+        if (m_own_font && m_font)
             ::DeleteObject(m_font);
         delete[] m_text_cache;
     }
@@ -162,10 +162,12 @@ BOOL base_textbox_t::unregister_class(HINSTANCE inst, LPCWSTR class_name) {
     return ::UnregisterClassW(class_name, inst);
 }
 
-void base_textbox_t::subclass(HWND hwnd, WNDPROC old_wndproc) {
+void base_textbox_t::subclass(HWND hwnd, WNDPROC new_wndproc) {
     assert(!m_pimpl->m_hwnd);
+    assert(new_wndproc);
     m_pimpl->m_hwnd = hwnd;
-    m_pimpl->m_old_wndproc = (WNDPROC)SetWindowLongPtrW(hwnd, GWLP_WNDPROC, (LONG_PTR)old_wndproc);
+    m_pimpl->m_old_wndproc = (WNDPROC)SetWindowLongPtrW(hwnd, GWLP_WNDPROC, (LONG_PTR)new_wndproc);
+    assert(m_pimpl->m_old_wndproc);
 }
 
 void base_textbox_t::unsubclass() {
@@ -239,6 +241,12 @@ void base_textbox_t::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
 
     INT text_len = ::GetWindowTextLengthW(hwnd);
     INT required_capacity = text_len + 1;
+
+    if (m_pimpl->m_text_cache_capacity >= 8 * required_capacity) {
+        delete[] m_pimpl->m_text_cache;
+        m_pimpl->m_text_cache = new(std::nothrow) wchar_t[required_capacity];
+        m_pimpl->m_text_cache_capacity = required_capacity;
+    }
 
     if (required_capacity > m_pimpl->m_text_cache_capacity) {
         delete[] m_pimpl->m_text_cache;
