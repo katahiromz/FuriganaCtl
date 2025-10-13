@@ -44,6 +44,7 @@ struct base_textbox_impl_t {
     HFONT OnGetFont(HWND hwnd);
     void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
     INT OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText);
+    INT OnGetTextLength(HWND hwnd);
     void OnSetText(HWND hwnd, LPCTSTR lpszText);
     void OnPaint(HWND hwnd);
 };
@@ -106,6 +107,13 @@ INT base_textbox_impl_t::OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText) {
     }
     lstrcpynW(lpszText, m_text, cchTextMax);
     return lstrlenW(lpszText);
+}
+
+// WM_GETTEXTLENGTH
+INT base_textbox_impl_t::OnGetTextLength(HWND hwnd) {
+    if (!m_text)
+        return 0;
+    return lstrlenW(m_text);
 }
 
 // WM_SETTEXT
@@ -270,6 +278,7 @@ base_textbox_t::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
         HANDLE_MSG(hwnd, WM_DESTROY, m_pimpl->OnDestroy);
         HANDLE_MSG(hwnd, WM_PAINT, m_pimpl->OnPaint);
         HANDLE_MSG(hwnd, WM_GETTEXT, m_pimpl->OnGetText);
+        HANDLE_MSG(hwnd, WM_GETTEXTLENGTH, m_pimpl->OnGetTextLength);
         HANDLE_MSG(hwnd, WM_SETTEXT, m_pimpl->OnSetText);
         HANDLE_MSG(hwnd, WM_GETFONT, m_pimpl->OnGetFont);
         HANDLE_MSG(hwnd, WM_SETFONT, m_pimpl->OnSetFont);
