@@ -100,8 +100,12 @@ void base_textbox_impl_t::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
 // WM_GETTEXT
 INT base_textbox_impl_t::OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText) {
+    if (!m_text) {
+        if (cchTextMax > 0) lpszText[0] = 0;
+        return 0;
+    }
     lstrcpynW(lpszText, m_text, cchTextMax);
-    return lstrlenW(lpszText) + 1;
+    return lstrlenW(lpszText);
 }
 
 // WM_SETTEXT
@@ -182,11 +186,11 @@ base_textbox_t::~base_textbox_t() {
 }
 
 DWORD base_textbox_t::get_style() const {
-    return GetWindowStyle(m_pimpl->m_hwnd);
+    return (DWORD)::GetWindowLongPtrW(m_pimpl->m_hwnd, GWL_STYLE);
 }
 
 DWORD base_textbox_t::get_exstyle() const {
-    return GetWindowExStyle(m_pimpl->m_hwnd);
+    return (DWORD)::GetWindowLongPtrW(m_pimpl->m_hwnd, GWL_EXSTYLE);
 }
 
 BOOL base_textbox_t::register_class(HINSTANCE inst, LPCWSTR class_name, WNDPROC wndproc) {
