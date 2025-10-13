@@ -111,8 +111,6 @@ INT base_textbox_impl_t::OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText) {
 
 // WM_GETTEXTLENGTH
 INT base_textbox_impl_t::OnGetTextLength(HWND hwnd) {
-    if (!m_text)
-        return 0;
     return lstrlenW(m_text);
 }
 
@@ -302,6 +300,14 @@ void base_textbox_t::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     ::SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
     ::DrawText(dc, m_pimpl->m_text, -1, client_rc, DT_LEFT | DT_TOP | DT_EDITCONTROL | DT_EXPANDTABS);
     ::SetBkMode(dc, old_mode);
+}
+
+LPCWSTR base_textbox_t::get_text() const {
+    return m_pimpl->m_text;
+}
+
+INT base_textbox_t::get_text_length() const {
+    return lstrlenW(m_pimpl->m_text);
 }
 
 //////////////////////////////////////////////////////////////////////////////

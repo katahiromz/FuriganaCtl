@@ -26,6 +26,8 @@ public:
     static base_textbox_t *get_self(HWND hwnd) {
         return reinterpret_cast<base_textbox_t *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     }
+    LPCWSTR get_text() const;
+    INT get_text_length() const;
 
     virtual LRESULT CALLBACK def_window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
