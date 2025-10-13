@@ -303,7 +303,7 @@ void base_textbox_t::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
 }
 
 LPCWSTR base_textbox_t::get_text() const {
-    return m_pimpl->m_text;
+    return m_pimpl->m_text ? m_pimpl->m_text : L"";
 }
 
 INT base_textbox_t::get_text_length() const {
