@@ -32,6 +32,13 @@ elseif (MSVC)
     endforeach()
 endif()
 
+# we don't want default manifests
+if(MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /MANIFEST:NO")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
+endif()
+
 ##############################################################################
 
 # base_textbox.dll
@@ -40,3 +47,5 @@ target_compile_definitions(base_textbox PRIVATE UNICODE _UNICODE BASE_TEXTBOX_EX
 set_target_properties(base_textbox PROPERTIES PREFIX "")
 
 ##############################################################################
+
+add_subdirectory(dialog-test)
