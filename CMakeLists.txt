@@ -7,6 +7,11 @@ cmake_minimum_required(VERSION 3.10)
 # project name and languages
 project(base_textbox CXX RC)
 
+# set output directory (build/)
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+
 # we don't want runtime DLLs
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # using Clang
@@ -41,11 +46,5 @@ endif()
 
 ##############################################################################
 
-# base_textbox.dll
-add_library(base_textbox SHARED base_textbox.cpp)
-target_compile_definitions(base_textbox PRIVATE UNICODE _UNICODE BASE_TEXTBOX_EXPORT)
-set_target_properties(base_textbox PROPERTIES PREFIX "")
-
-##############################################################################
-
+add_subdirectory(base_textbox)
 add_subdirectory(dialog-test)
