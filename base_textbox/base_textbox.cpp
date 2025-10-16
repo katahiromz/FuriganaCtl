@@ -189,11 +189,6 @@ BOOL base_textbox::unregister_class(HINSTANCE inst) {
 }
 
 LRESULT CALLBACK
-base_textbox::def_window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
-}
-
-LRESULT CALLBACK
 base_textbox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     base_textbox *self = get_self(hwnd);
     if (!self) {
@@ -240,7 +235,7 @@ base_textbox::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         m_pimpl->paint_client(hwnd, (HDC)wParam);
         break;
     default:
-        return def_window_proc(hwnd, uMsg, wParam, lParam);
+        return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     return 0;
 }
