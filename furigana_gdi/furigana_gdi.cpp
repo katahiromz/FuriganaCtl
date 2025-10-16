@@ -101,7 +101,7 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& tex
 /**
  * 一行のフリガナ付きテキストを描画する。
  *
- * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは nullptr。
+ * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
  * @param compound_text 描画したい、一行のルビ コンパウンド テキスト。
  * @param flags 未使用。
  * @param prc 描画する位置とサイズ。描画または計測後はサイズが変更される。
@@ -129,8 +129,8 @@ INT DrawFuriganaTextLine(
     bool has_ruby = ParseRubyCompoundText(parts, text);
     if (parts.empty()) return -1;
 
-    // dcがnullptrの場合、計測用に画面のHDCを使用する
-    HDC hdc = dc ? dc : GetDC(nullptr);
+    // dcがNULLの場合、計測用に画面のHDCを使用する
+    HDC hdc = dc ? dc : GetDC(NULL);
     if (!hdc) return -1;
 
     // 1. フォントメトリクスと行の高さを決定
@@ -199,12 +199,12 @@ INT DrawFuriganaTextLine(
             }
         }
 
-        // 5. 描画 (dc != nullptr の場合)
+        // 5. 描画 (dc != NULL の場合)
         if (dc) {
             if (part.type == TextPart::NORMAL) {
                 // 通常テキストの描画 (ベースラインに描画)
                 hFontOld = SelectObject(dc, hBaseFont);
-                ExtTextOutW(dc, current_x, base_y, 0, nullptr, &text[part.base_index], part.base_len, nullptr);
+                ExtTextOutW(dc, current_x, base_y, 0, NULL, &text[part.base_index], part.base_len, NULL);
                 SelectObject(dc, hFontOld);
             } else { // TextPart::RUBY
                 // A. ベーステキストの描画
@@ -215,7 +215,7 @@ INT DrawFuriganaTextLine(
                     base_start_x += (part_width - base_width) / 2;
                 }
 
-                ExtTextOutW(dc, base_start_x, base_y, 0, nullptr, &text[part.base_index], part.base_len, nullptr);
+                ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &text[part.base_index], part.base_len, NULL);
 
                 SelectObject(dc, hFontOld);
 
@@ -234,7 +234,7 @@ INT DrawFuriganaTextLine(
                 }
 
                 INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-                ExtTextOutW(dc, ruby_start_x, prc->top, 0, nullptr, &text[part.ruby_index], part.ruby_len, nullptr);
+                ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &text[part.ruby_index], part.ruby_len, NULL);
                 SetTextCharacterExtra(dc, old_extra_ruby);
 
                 SelectObject(dc, hFontOld);
@@ -253,7 +253,7 @@ INT DrawFuriganaTextLine(
     if (dc && !(flags & DT_NOCLIP)) {
         RestoreDC(hdc, saved_dc);
     }
-    if (!dc) ReleaseDC(nullptr, hdc);
+    if (!dc) ReleaseDC(NULL, hdc);
 
     // 9. 戻り値
     return wrap_index;
