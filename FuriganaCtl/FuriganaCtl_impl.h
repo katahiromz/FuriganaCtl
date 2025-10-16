@@ -1,17 +1,17 @@
 ﻿#pragma once
 
-#include "../base_textbox/base_textbox_impl.h"
+#include "../BaseTextBox/BaseTextBox_impl.h"
 
 //////////////////////////////////////////////////////////////////////////////
-// furigana_ctl_impl
+// FuriganaCtl_impl
 
-struct furigana_ctl_impl : base_textbox_impl {
+struct FuriganaCtl_impl : BaseTextBox_impl {
     HFONT m_sub_font;
     bool m_own_sub_font;
     INT m_ruby_ratio_mul; // ルビ比率の分子
     INT m_ruby_ratio_div; // ルビ比率の分母
 
-    furigana_ctl_impl(HWND hwnd, base_textbox *self) : base_textbox_impl(hwnd, self) {
+    FuriganaCtl_impl(HWND hwnd, BaseTextBox *self) : BaseTextBox_impl(hwnd, self) {
         m_sub_font = NULL;
         m_own_sub_font = false;
         m_ruby_ratio_mul = 4; // ルビ比率の分子

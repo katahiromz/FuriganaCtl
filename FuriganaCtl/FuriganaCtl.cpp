@@ -1,9 +1,9 @@
-﻿// furigana_ctl.cpp
+﻿// FuriganaCtl.cpp
 // Author: katahiromz
 // License: MIT
 //////////////////////////////////////////////////////////////////////////////
 
-#include "furigana_ctl.h"
+#include "FuriganaCtl.h"
 #include "furigana_api.h"
 #include "../furigana_gdi/furigana_gdi.h"
 #include <windowsx.h>
@@ -16,11 +16,11 @@ static inline void out_of_memory() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// furigana_ctl_impl
+// FuriganaCtl_impl
 
-#include "furigana_ctl_impl.h"
+#include "FuriganaCtl_impl.h"
 
-void furigana_ctl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
+void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!hfont)
         return;
 
@@ -34,27 +34,27 @@ void furigana_ctl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
     m_sub_font = ::CreateFontIndirect(&lf);
 
-    base_textbox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
+    BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
 
     ::InvalidateRect(hwndCtl, NULL, FALSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// furigana_ctl
+// FuriganaCtl
 
-IMPLEMENT_DYNAMIC(furigana_ctl);
+IMPLEMENT_DYNAMIC(FuriganaCtl);
 
-furigana_ctl::furigana_ctl(HWND hwnd) {
+FuriganaCtl::FuriganaCtl(HWND hwnd) {
     delete m_pimpl;
-    m_pimpl = new furigana_ctl_impl(hwnd, this);
+    m_pimpl = new FuriganaCtl_impl(hwnd, this);
     if (!m_pimpl) {
         out_of_memory();
     }
 }
 
-furigana_ctl::~furigana_ctl() { }
+FuriganaCtl::~FuriganaCtl() { }
 
-BOOL furigana_ctl::register_class(HINSTANCE inst) {
+BOOL FuriganaCtl::register_class(HINSTANCE inst) {
     WNDCLASSEXW wcx = { sizeof(wcx) };
     wcx.style = CS_PARENTDC | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
     wcx.lpfnWndProc = window_proc;
@@ -67,11 +67,11 @@ BOOL furigana_ctl::register_class(HINSTANCE inst) {
     return ::RegisterClassExW(&wcx);
 }
 
-BOOL furigana_ctl::unregister_class(HINSTANCE inst) {
+BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
     return ::UnregisterClassW(get_class_name(), inst);
 }
 
-LRESULT CALLBACK furigana_ctl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg)
     {
     case FC_SETRUBYRATIO:
@@ -83,12 +83,12 @@ LRESULT CALLBACK furigana_ctl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wP
         }
         return FALSE;
     default:
-        return base_textbox::window_proc_inner(hwnd, uMsg, wParam, lParam);
+        return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }
     return 0;
 }
 
-void furigana_ctl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
+void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     FillRect(dc, client_rc, GetStockBrush(WHITE_BRUSH));
 
     DWORD style = GetWindowLongPtr(hwnd, GWL_STYLE);
@@ -109,11 +109,11 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
         OutputDebugStringA("DLL_PROCESS_ATTACH\n");
-        furigana_ctl::register_class(NULL);
+        FuriganaCtl::register_class(NULL);
         break;
     case DLL_PROCESS_DETACH:
         OutputDebugStringA("DLL_PROCESS_DETACH\n");
-        furigana_ctl::unregister_class(NULL);
+        FuriganaCtl::unregister_class(NULL);
         break;
     }
     return TRUE;

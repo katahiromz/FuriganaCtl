@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
-#include "../furigana_ctl/furigana_api.h"
+#include "../FuriganaCtl/furigana_api.h"
 
 HFONT g_hFont = NULL;
 
@@ -75,7 +75,7 @@ WinMain(HINSTANCE   hInstance,
         INT         nCmdShow)
 {
     InitCommonControls();
-    LoadLibrary(TEXT("furigana_ctl"));
+    LoadLibrary(TEXT("FuriganaCtl"));
     DialogBox(hInstance, MAKEINTRESOURCE(1), NULL, DialogProc);
     return 0;
 }

@@ -167,7 +167,7 @@ INT DrawFuriganaTextLine(
     const INT base_y = prc->top + ruby_height; // ベーステキストのY座標
 
     hFontOld = SelectObject(hdc, hBaseFont);
-    INT gap_threshold = get_text_width(hdc, L"漢字i", 2);
+    INT gap_threshold = get_text_width(hdc, L"漢i", 2);
     SelectObject(hdc, hFontOld);
 
     // 3. パーツを順に処理し、幅を計測/描画する

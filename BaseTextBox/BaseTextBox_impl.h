@@ -1,4 +1,4 @@
-// base_textbox_impl.h
+// BaseTextBox_impl.h
 // Author: katahiromz
 // License: MIT
 //////////////////////////////////////////////////////////////////////////////
@@ -6,10 +6,10 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// base_textbox_impl
+// BaseTextBox_impl
 
-struct base_textbox_impl {
-    base_textbox *m_self;
+struct BaseTextBox_impl {
+    BaseTextBox *m_self;
     HWND m_hwnd;
     HWND m_hwndParent;
     HFONT m_font;
@@ -18,7 +18,7 @@ struct base_textbox_impl {
     INT m_text_length;
     INT m_text_capacity;
 
-    base_textbox_impl(HWND hwnd, base_textbox *self) {
+    BaseTextBox_impl(HWND hwnd, BaseTextBox *self) {
         m_self = self;
         m_hwnd = hwnd;
         m_hwndParent = hwnd ? ::GetParent(hwnd) : NULL;
@@ -28,7 +28,7 @@ struct base_textbox_impl {
         m_text_length = 0;
         m_text_capacity = 0;
     }
-    virtual ~base_textbox_impl() {
+    virtual ~BaseTextBox_impl() {
         if (m_own_font && m_font)
             ::DeleteObject(m_font);
         delete[] m_text;

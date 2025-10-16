@@ -1,4 +1,4 @@
-// base_textbox.h
+// BaseTextBox.h
 // Author: katahiromz
 // License: MIT
 //////////////////////////////////////////////////////////////////////////////
@@ -11,17 +11,17 @@
 #include <map>
 #include <string>
 
-struct base_textbox_impl;
-class base_textbox;
+struct BaseTextBox_impl;
+class BaseTextBox;
 
 //////////////////////////////////////////////////////////////////////////////
 // DECLARE_DYNAMIC/IMPLEMENT_DYNAMIC
 
 #define DECLARE_DYNAMIC(class_name) \
-    static base_textbox *create_instance();
+    static BaseTextBox *create_instance();
 
 #define IMPLEMENT_DYNAMIC(class_name) \
-    /*static*/ base_textbox *class_name::create_instance() \
+    /*static*/ BaseTextBox *class_name::create_instance() \
     { \
         return new(std::nothrow) class_name(); \
     } \
@@ -31,29 +31,29 @@ class base_textbox;
         { \
             std::wstring cls_name = TEXT(#class_name); \
             CharUpperW(&cls_name[0]); \
-            base_textbox::class_to_create_map()[cls_name.c_str()] = &class_name::create_instance; \
+            BaseTextBox::class_to_create_map()[cls_name.c_str()] = &class_name::create_instance; \
         } \
     } class_name##AutoDynamicRegister##__LINE__;
 
-class base_textbox;
-typedef base_textbox *(*create_self_t)(void);
+class BaseTextBox;
+typedef BaseTextBox *(*create_self_t)(void);
 
 //////////////////////////////////////////////////////////////////////////////
-// base_textbox
+// BaseTextBox
 
-class base_textbox
+class BaseTextBox
 {
 public:
-    DECLARE_DYNAMIC(base_textbox);
+    DECLARE_DYNAMIC(BaseTextBox);
 
-    base_textbox(HWND hwnd = NULL);
-    virtual ~base_textbox();
+    BaseTextBox(HWND hwnd = NULL);
+    virtual ~BaseTextBox();
 
     DWORD get_style() const;
     DWORD get_exstyle() const;
-    static LPCWSTR get_class_name() { return L"base_textbox"; }
-    static base_textbox *get_self(HWND hwnd) {
-        return reinterpret_cast<base_textbox *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+    static LPCWSTR get_class_name() { return L"BaseTextBox"; }
+    static BaseTextBox *get_self(HWND hwnd) {
+        return reinterpret_cast<BaseTextBox *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     }
     LPCWSTR get_text() const;
     INT get_text_length() const;
@@ -64,8 +64,8 @@ public:
     static BOOL unregister_class(HINSTANCE inst);
 
 protected:
-    friend struct base_textbox_impl;
-    struct base_textbox_impl *m_pimpl;
+    friend struct BaseTextBox_impl;
+    struct BaseTextBox_impl *m_pimpl;
 
     virtual LRESULT CALLBACK window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     virtual void draw_client(HWND hwnd, HDC dc, RECT *client_rc);

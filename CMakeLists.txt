@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # project name and languages
-project(base_textbox CXX RC)
+project(BaseTextBox CXX RC)
 
 # set output directory (build/)
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
@@ -47,6 +47,6 @@ endif()
 ##############################################################################
 
 add_subdirectory(furigana_gdi)
-add_subdirectory(base_textbox)
-add_subdirectory(furigana_ctl)
+add_subdirectory(BaseTextBox)
+add_subdirectory(FuriganaCtl)
 add_subdirectory(dialog-test)
