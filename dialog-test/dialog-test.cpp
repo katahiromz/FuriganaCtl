@@ -18,6 +18,13 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
     case IDCANCEL:
         EndDialog(hwnd, id);
         break;
+    case edt1:
+        {
+            TCHAR text[512];
+            GetDlgItemText(hwnd, edt1, text, _countof(text));
+            SetDlgItemText(hwnd, edt2, text);
+        }
+        break;
     }
 }
 

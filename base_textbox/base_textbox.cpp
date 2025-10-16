@@ -65,8 +65,6 @@ BOOL base_textbox_impl_t::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
         m_own_font = false;
     }
 
-    OnSetText(hwnd, lpCreateStruct->lpszName);
-
     return TRUE;
 }
 
@@ -319,11 +317,11 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
         OutputDebugStringA("DLL_PROCESS_ATTACH\n");
-        base_textbox_t::register_class(hinstDLL);
+        base_textbox_t::register_class(nullptr);
         break;
     case DLL_PROCESS_DETACH:
         OutputDebugStringA("DLL_PROCESS_DETACH\n");
-        base_textbox_t::unregister_class(hinstDLL);
+        base_textbox_t::unregister_class(nullptr);
         break;
     }
     return TRUE;
