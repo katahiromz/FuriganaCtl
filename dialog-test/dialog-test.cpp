@@ -8,6 +8,10 @@ HFONT g_hFont = nullptr;
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
+    DWORD style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    style |= ES_MULTILINE;
+    SetWindowLongPtr(hwnd, GWL_STYLE, style);
+
     LOGFONT lf;
     ZeroMemory(&lf, sizeof(lf));
     lf.lfHeight = -16;

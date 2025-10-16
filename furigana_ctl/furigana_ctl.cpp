@@ -90,7 +90,13 @@ LRESULT CALLBACK furigana_ctl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wP
 
 void furigana_ctl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     FillRect(dc, client_rc, GetStockBrush(WHITE_BRUSH));
-    DrawFuriganaTextLine(dc, get_text(), get_text_length(), 0, client_rc, pimpl()->m_font, pimpl()->m_sub_font);
+
+    DWORD style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    DWORD flags = 0;
+    if (!(style & ES_MULTILINE))
+        flags |= DT_SINGLELINE;
+
+    DrawFuriganaTextLine(dc, get_text(), client_rc, pimpl()->m_font, pimpl()->m_sub_font, flags);
 }
 
 //////////////////////////////////////////////////////////////////////////////
