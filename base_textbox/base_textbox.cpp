@@ -16,38 +16,7 @@ static inline void out_of_memory() {
 //////////////////////////////////////////////////////////////////////////////
 // base_textbox_impl_t
 
-struct base_textbox_impl_t {
-    base_textbox_t *m_self = nullptr;
-    HWND m_hwnd = nullptr;
-    HWND m_hwndParent = nullptr;
-    HFONT m_font = nullptr;
-    bool m_own_font = false;
-    wchar_t *m_text = nullptr;
-    INT m_text_length = 0;
-    INT m_text_capacity = 0;
-
-    base_textbox_impl_t(HWND hwnd, base_textbox_t *self) {
-        m_self = self;
-        m_hwnd = hwnd;
-        m_hwndParent = hwnd ? ::GetParent(hwnd) : nullptr;
-    }
-    ~base_textbox_impl_t() {
-        if (m_own_font && m_font)
-            ::DeleteObject(m_font);
-        delete[] m_text;
-    }
-
-    void paint_client(HWND hwnd, HDC hDC = nullptr);
-
-    BOOL OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
-    void OnDestroy(HWND hwnd);
-    HFONT OnGetFont(HWND hwnd);
-    void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
-    INT OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText);
-    INT OnGetTextLength(HWND hwnd);
-    void OnSetText(HWND hwnd, LPCTSTR lpszText);
-    void OnPaint(HWND hwnd);
-};
+#include "base_textbox_impl.h"
 
 // WM_CREATE
 BOOL base_textbox_impl_t::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
