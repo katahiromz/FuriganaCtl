@@ -144,7 +144,7 @@ INT APIENTRY DrawFuriganaTextLine(HDC dc, LPCWSTR compound_text, INT compound_te
     const INT base_y = prc->top + ruby_height; // ベーステキストのY座標
 
     hFontOld = SelectObject(hdc, hBaseFont);
-    INT two_char_width = get_text_width(hdc, L"漢字", 2);
+    INT gap_threshold = get_text_width(hdc, L"漢字i", 2);
     SelectObject(hdc, hFontOld);
 
     // 3. パーツを順に処理し、幅を計測/描画する
@@ -202,7 +202,7 @@ INT APIENTRY DrawFuriganaTextLine(HDC dc, LPCWSTR compound_text, INT compound_te
                 INT ruby_extra = 0;
                 INT ruby_start_x = current_x;
 
-                if (part_width - two_char_width > ruby_width) {
+                if (part_width - ruby_width > gap_threshold) {
                     if (part.ruby_len > 1) {
                         ruby_extra = (part_width - ruby_width) / (part.ruby_len - 1);
                     }
