@@ -46,7 +46,7 @@ WinMain(HINSTANCE   hInstance,
         INT         nCmdShow)
 {
     InitCommonControls();
-    LoadLibrary(TEXT("base_textbox"));
+    LoadLibrary(TEXT("furigana_ctl"));
     DialogBox(hInstance, MAKEINTRESOURCE(1), NULL, DialogProc);
     return 0;
 }

@@ -48,4 +48,5 @@ endif()
 
 add_subdirectory(furigana_gdi)
 add_subdirectory(base_textbox)
+add_subdirectory(furigana_ctl)
 add_subdirectory(dialog-test)

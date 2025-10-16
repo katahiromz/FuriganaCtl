@@ -14,12 +14,12 @@ static inline void out_of_memory() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// base_textbox_impl_t
+// base_textbox_impl
 
 #include "base_textbox_impl.h"
 
 // WM_CREATE
-BOOL base_textbox_impl_t::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
+BOOL base_textbox_impl::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
     m_hwnd = hwnd;
     m_hwndParent = ::GetParent(hwnd);
 
@@ -40,7 +40,7 @@ BOOL base_textbox_impl_t::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
 }
 
 // WM_DESTROY
-void base_textbox_impl_t::OnDestroy(HWND hwnd) {
+void base_textbox_impl::OnDestroy(HWND hwnd) {
     if (m_own_font) {
         ::DeleteObject(m_font);
         m_font = nullptr;
@@ -49,12 +49,12 @@ void base_textbox_impl_t::OnDestroy(HWND hwnd) {
 }
 
 // WM_GETFONT
-HFONT base_textbox_impl_t::OnGetFont(HWND hwnd) {
+HFONT base_textbox_impl::OnGetFont(HWND hwnd) {
     return m_font;
 }
 
 // WM_SETFONT
-void base_textbox_impl_t::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
+void base_textbox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (m_font == hfont)
         return;
 
@@ -69,7 +69,7 @@ void base_textbox_impl_t::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 }
 
 // WM_GETTEXT
-INT base_textbox_impl_t::OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText) {
+INT base_textbox_impl::OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText) {
     if (!m_text) {
         if (cchTextMax > 0) lpszText[0] = 0;
         return 0;
@@ -79,12 +79,12 @@ INT base_textbox_impl_t::OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText) {
 }
 
 // WM_GETTEXTLENGTH
-INT base_textbox_impl_t::OnGetTextLength(HWND hwnd) {
+INT base_textbox_impl::OnGetTextLength(HWND hwnd) {
     return lstrlenW(m_text);
 }
 
 // WM_SETTEXT
-void base_textbox_impl_t::OnSetText(HWND hwnd, LPCTSTR lpszText) {
+void base_textbox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
     if (!lpszText) lpszText = L"";
 
     INT text_len = lstrlenW(lpszText);
@@ -117,12 +117,12 @@ void base_textbox_impl_t::OnSetText(HWND hwnd, LPCTSTR lpszText) {
 }
 
 // WM_PAINT
-void base_textbox_impl_t::OnPaint(HWND hwnd) {
+void base_textbox_impl::OnPaint(HWND hwnd) {
     paint_client(hwnd, nullptr);
 }
 
 // WM_PAINT, WM_PRINTCLIENT
-void base_textbox_impl_t::paint_client(HWND hwnd, HDC hDC) {
+void base_textbox_impl::paint_client(HWND hwnd, HDC hDC) {
     if (!::IsWindowVisible(hwnd))
         return;
 
@@ -148,55 +148,61 @@ void base_textbox_impl_t::paint_client(HWND hwnd, HDC hDC) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// base_textbox_t
+// base_textbox
 
-base_textbox_t::base_textbox_t(HWND hwnd) {
-    m_pimpl = new base_textbox_impl_t(hwnd, this);
+IMPLEMENT_DYNAMIC(base_textbox);
+
+base_textbox::base_textbox(HWND hwnd) {
+    m_pimpl = new base_textbox_impl(hwnd, this);
     if (!m_pimpl) {
         out_of_memory();
     }
 }
 
-base_textbox_t::~base_textbox_t() {
+base_textbox::~base_textbox() {
     delete m_pimpl;
 }
 
-DWORD base_textbox_t::get_style() const {
+DWORD base_textbox::get_style() const {
     return (DWORD)::GetWindowLongPtrW(m_pimpl->m_hwnd, GWL_STYLE);
 }
 
-DWORD base_textbox_t::get_exstyle() const {
+DWORD base_textbox::get_exstyle() const {
     return (DWORD)::GetWindowLongPtrW(m_pimpl->m_hwnd, GWL_EXSTYLE);
 }
 
-BOOL base_textbox_t::register_class(HINSTANCE inst, LPCWSTR class_name, WNDPROC wndproc) {
+BOOL base_textbox::register_class(HINSTANCE inst) {
     WNDCLASSEXW wcx = { sizeof(wcx) };
     wcx.style = CS_PARENTDC | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
-    wcx.lpfnWndProc = wndproc;
+    wcx.lpfnWndProc = window_proc;
     wcx.hInstance = inst;
     wcx.hIcon = NULL;
     wcx.hCursor = LoadCursorW(NULL, IDC_ARROW);
     wcx.hbrBackground = NULL; // optimized
-    wcx.lpszClassName = class_name;
+    wcx.lpszClassName = get_class_name();
     wcx.hIconSm = NULL;
     return ::RegisterClassExW(&wcx);
 }
 
-BOOL base_textbox_t::unregister_class(HINSTANCE inst, LPCWSTR class_name) {
-    return ::UnregisterClassW(class_name, inst);
+BOOL base_textbox::unregister_class(HINSTANCE inst) {
+    return ::UnregisterClassW(get_class_name(), inst);
 }
 
 LRESULT CALLBACK
-base_textbox_t::def_window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+base_textbox::def_window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
 LRESULT CALLBACK
-base_textbox_t::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    base_textbox_t *self = get_self(hwnd);
+base_textbox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    base_textbox *self = get_self(hwnd);
     if (!self) {
         if (uMsg == WM_NCCREATE) {
-            self = new(std::nothrow) base_textbox_t(hwnd);
+            auto cs = reinterpret_cast<CREATESTRUCT *>(lParam);
+            auto class_name = cs->lpszClass;
+            create_self_t create_self = class_to_create_map()[class_name];
+            assert(create_self);
+            self = (*create_self)();
             if (!self || !self->m_pimpl) {
                 out_of_memory();
                 return FALSE;
@@ -218,7 +224,7 @@ base_textbox_t::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 }
 
 LRESULT CALLBACK
-base_textbox_t::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+base_textbox::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
         HANDLE_MSG(hwnd, WM_CREATE, m_pimpl->OnCreate);
         HANDLE_MSG(hwnd, WM_DESTROY, m_pimpl->OnDestroy);
@@ -239,7 +245,7 @@ base_textbox_t::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
     return 0;
 }
 
-void base_textbox_t::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
+void base_textbox::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     assert(client_rc);
 
     ::FillRect(dc, client_rc, ::GetSysColorBrush(COLOR_WINDOW));
@@ -251,11 +257,11 @@ void base_textbox_t::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     ::SetBkMode(dc, old_mode);
 }
 
-LPCWSTR base_textbox_t::get_text() const {
+LPCWSTR base_textbox::get_text() const {
     return m_pimpl->m_text ? m_pimpl->m_text : L"";
 }
 
-INT base_textbox_t::get_text_length() const {
+INT base_textbox::get_text_length() const {
     return m_pimpl->m_text_length;
 }
 
@@ -268,11 +274,11 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
         OutputDebugStringA("DLL_PROCESS_ATTACH\n");
-        base_textbox_t::register_class(nullptr);
+        base_textbox::register_class(nullptr);
         break;
     case DLL_PROCESS_DETACH:
         OutputDebugStringA("DLL_PROCESS_DETACH\n");
-        base_textbox_t::unregister_class(nullptr);
+        base_textbox::unregister_class(nullptr);
         break;
     }
     return TRUE;
