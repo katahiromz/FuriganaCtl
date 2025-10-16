@@ -24,6 +24,7 @@ struct base_textbox_impl_t {
     bool m_own_font = false;
     WNDPROC m_old_wndproc = nullptr;
     wchar_t *m_text = nullptr;
+    INT m_text_length = 0;
     INT m_text_capacity = 0;
 
     base_textbox_impl_t(HWND hwnd, base_textbox_t *self) {
@@ -64,6 +65,8 @@ BOOL base_textbox_impl_t::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
         m_font = nullptr;
         m_own_font = false;
     }
+
+    OnSetText(hwnd, lpCreateStruct->lpszName);
 
     return TRUE;
 }
@@ -124,7 +127,7 @@ void base_textbox_impl_t::OnSetText(HWND hwnd, LPCTSTR lpszText) {
         m_text = new(std::nothrow) wchar_t[required_capacity];
         if (!m_text) {
             out_of_memory();
-            m_text_capacity = 0;
+            m_text_length = m_text_capacity = 0;
             return;
         }
         m_text_capacity = required_capacity;
@@ -134,13 +137,14 @@ void base_textbox_impl_t::OnSetText(HWND hwnd, LPCTSTR lpszText) {
         m_text = new(std::nothrow) wchar_t[required_capacity + extra];
         if (!m_text) {
             out_of_memory();
-            m_text_capacity = 0;
+            m_text_length = m_text_capacity = 0;
             return;
         }
         m_text_capacity = required_capacity + extra;
     }
 
     lstrcpynW(m_text, lpszText, required_capacity);
+    m_text_length = text_len;
     ::InvalidateRect(hwnd, nullptr, TRUE);
 }
 
@@ -296,7 +300,8 @@ void base_textbox_t::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
 
     INT old_mode = ::SetBkMode(dc, TRANSPARENT);
     ::SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
-    ::DrawText(dc, m_pimpl->m_text, -1, client_rc, DT_LEFT | DT_TOP | DT_EDITCONTROL | DT_EXPANDTABS);
+    ::DrawText(dc, m_pimpl->m_text, m_pimpl->m_text_length, client_rc, 
+               DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
     ::SetBkMode(dc, old_mode);
 }
 
