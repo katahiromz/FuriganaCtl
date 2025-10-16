@@ -287,7 +287,7 @@ LPCWSTR base_textbox_t::get_text() const {
 }
 
 INT base_textbox_t::get_text_length() const {
-    return lstrlenW(m_pimpl->m_text);
+    return m_pimpl->m_text_length;
 }
 
 //////////////////////////////////////////////////////////////////////////////
