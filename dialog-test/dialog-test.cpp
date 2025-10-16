@@ -5,6 +5,8 @@
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
+    SetDlgItemText(hwnd, edt1, TEXT("This is a test."));
+    SetDlgItemText(hwnd, edt2, TEXT("This is a test."));
     return TRUE;
 }
 
@@ -37,6 +39,7 @@ WinMain(HINSTANCE   hInstance,
         INT         nCmdShow)
 {
     InitCommonControls();
+    LoadLibrary(TEXT("base_textbox"));
     DialogBox(hInstance, MAKEINTRESOURCE(1), NULL, DialogProc);
     return 0;
 }
