@@ -8,8 +8,13 @@ HFONT g_hFont = nullptr;
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
+    bool multi = true;
+    bool center = false;
+    bool right = false;
     DWORD style = GetWindowLongPtr(hwnd, GWL_STYLE);
-    style |= ES_MULTILINE;
+    if (multi) style |= ES_MULTILINE;
+    if (center) style |= ES_CENTER;
+    if (right) style |= ES_RIGHT;
     SetWindowLongPtr(hwnd, GWL_STYLE, style);
 
     LOGFONT lf;

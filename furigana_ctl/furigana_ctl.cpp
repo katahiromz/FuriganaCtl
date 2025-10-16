@@ -12,7 +12,7 @@
 
 static inline void out_of_memory() {
     OutputDebugStringA("Out of memory!\n");
-    MessageBoxA(nullptr, "Out of memory!", "Error", MB_ICONERROR);
+    MessageBoxA(NULL, "Out of memory!", "Error", MB_ICONERROR);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ void furigana_ctl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
     base_textbox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
 
-    ::InvalidateRect(hwndCtl, nullptr, FALSE);
+    ::InvalidateRect(hwndCtl, NULL, FALSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -93,8 +93,9 @@ void furigana_ctl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
 
     DWORD style = GetWindowLongPtr(hwnd, GWL_STYLE);
     DWORD flags = 0;
-    if (!(style & ES_MULTILINE))
-        flags |= DT_SINGLELINE;
+    if (!(style & ES_MULTILINE)) flags |= DT_SINGLELINE;
+    if (flags & ES_CENTER) flags |= DT_CENTER;
+    if (flags & ES_RIGHT) flags |= DT_RIGHT;
 
     DrawFuriganaTextLine(dc, get_text(), client_rc, pimpl()->m_font, pimpl()->m_sub_font, flags);
 }
@@ -108,11 +109,11 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
         OutputDebugStringA("DLL_PROCESS_ATTACH\n");
-        furigana_ctl::register_class(nullptr);
+        furigana_ctl::register_class(NULL);
         break;
     case DLL_PROCESS_DETACH:
         OutputDebugStringA("DLL_PROCESS_DETACH\n");
-        furigana_ctl::unregister_class(nullptr);
+        furigana_ctl::unregister_class(NULL);
         break;
     }
     return TRUE;
