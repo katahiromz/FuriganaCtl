@@ -1,1 +1,1 @@
-# base_textbox by katahiromz
+# FuriganaCtl by katahiromz
