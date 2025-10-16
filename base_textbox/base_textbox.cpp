@@ -194,7 +194,8 @@ base_textbox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     if (!self) {
         if (uMsg == WM_NCCREATE) {
             auto cs = reinterpret_cast<CREATESTRUCT *>(lParam);
-            auto class_name = cs->lpszClass;
+            std::wstring class_name = cs->lpszClass;
+            ::CharUpperW(&class_name[0]);
             create_self_t create_self = class_to_create_map()[class_name];
             assert(create_self);
             self = (*create_self)();

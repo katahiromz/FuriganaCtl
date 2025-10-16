@@ -19,6 +19,25 @@ static inline void out_of_memory() {
 
 #include "furigana_ctl_impl.h"
 
+void furigana_ctl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
+    if (!hfont)
+        return;
+
+    LOGFONT lf;
+    ::GetObject(hfont, sizeof(lf), &lf);
+    lf.lfHeight *= 4;
+    lf.lfHeight /= 5;
+
+    if (m_own_sub_font && m_sub_font)
+        ::DeleteObject(m_sub_font);
+
+    m_sub_font = ::CreateFontIndirect(&lf);
+
+    base_textbox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
+
+    ::InvalidateRect(hwndCtl, nullptr, FALSE);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // furigana_ctl
 
@@ -62,7 +81,7 @@ LRESULT CALLBACK furigana_ctl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wP
 
 void furigana_ctl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     FillRect(dc, client_rc, GetStockBrush(WHITE_BRUSH));
-    DrawFuriganaTextLine(dc, get_text(), get_text_length(), 0, client_rc, pimpl()->m_font, pimpl()->m_font);
+    DrawFuriganaTextLine(dc, get_text(), get_text_length(), 0, client_rc, pimpl()->m_font, pimpl()->m_sub_font);
 }
 
 //////////////////////////////////////////////////////////////////////////////

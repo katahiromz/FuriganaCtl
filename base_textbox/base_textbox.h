@@ -28,7 +28,9 @@ class base_textbox;
     { \
         class_name##AutoDynamicRegister() \
         { \
-            base_textbox::class_to_create_map()[TEXT(#class_name)] = &class_name::create_instance; \
+            std::wstring cls_name = TEXT(#class_name); \
+            CharUpperW(&cls_name[0]); \
+            base_textbox::class_to_create_map()[cls_name.c_str()] = &class_name::create_instance; \
         } \
     } class_name##AutoDynamicRegister##__LINE__;
 
