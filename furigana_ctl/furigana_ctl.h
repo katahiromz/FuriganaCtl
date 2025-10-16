@@ -17,7 +17,7 @@ class furigana_ctl : public base_textbox
 public:
     DECLARE_DYNAMIC(furigana_ctl);
 
-    furigana_ctl(HWND hwnd = nullptr);
+    furigana_ctl(HWND hwnd = NULL);
     virtual ~furigana_ctl();
 
     static LPCWSTR get_class_name() { return L"furigana_ctl"; }

@@ -4,7 +4,7 @@
 #include <commctrl.h>
 #include "../furigana_ctl/furigana_api.h"
 
-HFONT g_hFont = nullptr;
+HFONT g_hFont = NULL;
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
@@ -35,7 +35,7 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 void OnDestroy(HWND hwnd)
 {
     DeleteObject(g_hFont);
-    g_hFont = nullptr;
+    g_hFont = NULL;
 }
 
 void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
