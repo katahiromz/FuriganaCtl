@@ -35,6 +35,20 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, LPCWSTR text, INT len) 
     INT i = 0;
     bool has_ruby = false;
     while (i < len) {
+        // "{漢字(かんじ)}"
+        if (text[i] == '{') {
+            const wchar_t *paren_start = wcschr(&text[i], '(');
+            if (paren_start) {
+                const wchar_t* furigana_end = wcsstr(paren_start, L")}");
+                if (furigana_end) {
+                    parts.push_back({ TextPart::RUBY, i + 1, &text[i + 1], (paren_start - &text[i + 1]), paren_start + 1, (furigana_end - (paren_start + 1)) });
+                    i = (furigana_end - text) + 2;
+                    has_ruby = true;
+                    continue;
+                }
+            }
+        }
+        // "漢字(かんじ)"
         INT kanji_start = i;
         INT kanji_end = i;
         while (kanji_end < len && is_char_kanji(text[kanji_end])) {
@@ -57,7 +71,7 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, LPCWSTR text, INT len) 
         INT normal_start = i;
         INT normal_end = i;
         while (normal_end < len) {
-            if (is_char_kanji(text[normal_end]) || text[normal_end] == L'(') {
+            if (is_char_kanji(text[normal_end]) || text[normal_end] == L'(' || text[normal_end] == L'{') {
                 if (normal_end > normal_start) break;
             }
             normal_end++;
