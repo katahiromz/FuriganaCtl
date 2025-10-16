@@ -129,6 +129,10 @@ INT APIENTRY DrawFuriganaTextLine(HDC dc, LPCWSTR compound_text, INT compound_te
     INT wrap_index = -1;
     const INT base_y = prc->top + ruby_height; // ベーステキストのY座標
 
+    hFontOld = SelectObject(hdc, hBaseFont);
+    INT two_char_width = get_text_width(hdc, L"漢字", 2);
+    SelectObject(hdc, hFontOld);
+
     // 3. パーツを順に処理し、幅を計測/描画する
     for (const auto& part : parts) {
         INT base_width, ruby_width = 0, part_width;
@@ -166,53 +170,36 @@ INT APIENTRY DrawFuriganaTextLine(HDC dc, LPCWSTR compound_text, INT compound_te
                 ExtTextOutW(dc, current_x, base_y, 0, nullptr, part.base_text, part.base_len, nullptr);
                 SelectObject(dc, hFontOld);
             } else { // TextPart::RUBY
-
-                // A. ベーステキストの描画 (SetTextCharacterExtraを使用)
+                // A. ベーステキストの描画
                 hFontOld = SelectObject(dc, hBaseFont);
-                INT base_extra = 0;
-                INT base_start_x = current_x;
 
+                INT base_start_x = current_x;
                 if (part_width > base_width) {
-                    // ベーステキストの幅がルビブロック幅より小さい場合: 分散配置
-                    if (part.base_len > 1) {
-                        base_extra = (part_width - base_width) / (part.base_len - 1);
-                    } else {
-                        // 1文字の場合は中央寄せ
-                        base_start_x += (part_width - base_width) / 2;
-                    }
+                    base_start_x += (part_width - base_width) / 2;
                 }
-                // SetTextCharacterExtraを実行し、古い値を保存
-                INT old_extra_base = SetTextCharacterExtra(dc, base_extra);
 
                 ExtTextOutW(dc, base_start_x, base_y, 0, nullptr, part.base_text, part.base_len, nullptr);
 
-                // リセット
-                SetTextCharacterExtra(dc, old_extra_base);
                 SelectObject(dc, hFontOld);
 
                 // B. ルビテキストの描画 (SetTextCharacterExtraを使用)
                 hFontOld = SelectObject(dc, hRubyFont);
+
                 INT ruby_extra = 0;
                 INT ruby_start_x = current_x;
 
-                if (part_width > ruby_width) {
-                    // ルビテキストの幅がルビブロック幅より小さい場合: 中央寄せ
-                    ruby_start_x += (part_width - ruby_width) / 2;
-                } else if (part_width < ruby_width) {
-                    // ルビテキストの幅がルビブロック幅より大きい場合: 詰め込み配置
-                    // 詰め込み幅 (マイナス値)
+                if (part_width - two_char_width > ruby_width) {
                     if (part.ruby_len > 1) {
                         ruby_extra = (part_width - ruby_width) / (part.ruby_len - 1);
                     }
+                } else {
+                    ruby_start_x += (part_width - ruby_width) / 2;
                 }
 
-                // SetTextCharacterExtraを実行し、古い値を保存
                 INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-
                 ExtTextOutW(dc, ruby_start_x, prc->top, 0, nullptr, part.ruby_text, part.ruby_len, nullptr);
-
-                // リセット
                 SetTextCharacterExtra(dc, old_extra_ruby);
+
                 SelectObject(dc, hFontOld);
             }
         }

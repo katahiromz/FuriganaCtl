@@ -16,6 +16,21 @@ constexpr inline bool is_char_katakana(wchar_t ch) noexcept {
 constexpr inline bool is_char_kana(wchar_t ch) noexcept {
     return is_char_hiragana(ch) || is_char_katakana(ch);
 }
+constexpr inline bool is_char_digit(wchar_t ch) noexcept {
+    return ((L'0' <= ch && ch <= L'9') || (L'０' <= ch && ch <= L'９'));
+}
+constexpr inline bool is_char_lower(wchar_t ch) noexcept {
+    return ((L'a' <= ch && ch <= L'z') || (L'ａ' <= ch && ch <= L'ｚ'));
+}
+constexpr inline bool is_char_upper(wchar_t ch) noexcept {
+    return ((L'A' <= ch && ch <= L'Z') || (L'Ａ' <= ch && ch <= L'Ｚ'));
+}
+constexpr inline bool is_char_alpha(wchar_t ch) noexcept {
+    return is_char_lower(ch) || is_char_upper(ch);
+}
+constexpr inline bool is_char_alpha_numeric(wchar_t ch) noexcept {
+    return is_char_alpha(ch) || is_char_digit(ch);
+}
 constexpr inline bool is_char_kanji(wchar_t ch) noexcept {
     return ((0x3400 <= ch && ch <= 0x9FFF) || (0xF900 <= ch && ch <= 0xFAFF) || ch == 0x3007);
 }

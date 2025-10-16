@@ -1,12 +1,12 @@
-// License: MIT
+﻿// License: MIT
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
-    SetDlgItemText(hwnd, edt1, TEXT("This is a test."));
-    SetDlgItemText(hwnd, edt2, TEXT("This is a test."));
+    SetDlgItemText(hwnd, edt1, TEXT("志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。第三次世界大戦(だいさんじせかいたいせん)にならないように。志布志(しぶし)"));
+    SetDlgItemText(hwnd, edt2, TEXT("志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。第三次世界大戦(だいさんじせかいたいせん)にならないように。志布志(しぶし)"));
     return TRUE;
 }
 
