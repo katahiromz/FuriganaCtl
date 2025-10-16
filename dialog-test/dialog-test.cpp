@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
+#include "../furigana_ctl/furigana_api.h"
 
 HFONT g_hFont = nullptr;
 
@@ -13,7 +14,8 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     lf.lfCharSet = SHIFTJIS_CHARSET;
     lstrcpyn(lf.lfFaceName, TEXT("ピザPゴシック"), _countof(lf.lfFaceName));
     g_hFont = ::CreateFontIndirect(&lf);
-    
+
+    SendDlgItemMessage(hwnd, edt2, FC_SETRUBYRATIO, 4, 5);
     SendDlgItemMessage(hwnd, edt2, WM_SETFONT, (WPARAM)g_hFont, TRUE);
 
     SetDlgItemText(hwnd, edt1, TEXT("志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。第三次世界大戦(だいさんじせかいたいせん)にならないように。志布志(しぶし)"));

@@ -1,9 +1,10 @@
-// furigana_ctl.cpp
+﻿// furigana_ctl.cpp
 // Author: katahiromz
 // License: MIT
 //////////////////////////////////////////////////////////////////////////////
 
 #include "furigana_ctl.h"
+#include "furigana_api.h"
 #include "../furigana_gdi/furigana_gdi.h"
 #include <windowsx.h>
 #include <new>
@@ -25,8 +26,8 @@ void furigana_ctl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
     LOGFONT lf;
     ::GetObject(hfont, sizeof(lf), &lf);
-    lf.lfHeight *= 4;
-    lf.lfHeight /= 5;
+    lf.lfHeight *= m_ruby_ratio_mul;
+    lf.lfHeight /= m_ruby_ratio_div;
 
     if (m_own_sub_font && m_sub_font)
         ::DeleteObject(m_sub_font);
@@ -73,6 +74,14 @@ BOOL furigana_ctl::unregister_class(HINSTANCE inst) {
 LRESULT CALLBACK furigana_ctl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg)
     {
+    case FC_SETRUBYRATIO:
+        if ((INT)wParam >= 0 && (INT)lParam > 0)
+        {
+            pimpl()->m_ruby_ratio_mul = (INT)wParam; // ルビ比率の分子
+            pimpl()->m_ruby_ratio_div = (INT)lParam; // ルビ比率の分母
+            return TRUE;
+        }
+        return FALSE;
     default:
         return base_textbox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }
