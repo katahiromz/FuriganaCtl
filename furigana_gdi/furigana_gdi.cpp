@@ -171,7 +171,8 @@ INT DrawFuriganaTextLine(
     SelectObject(hdc, hFontOld);
 
     // 3. パーツを順に処理し、幅を計測/描画する
-    for (const auto& part : parts) {
+    for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
+        const TextPart& part = parts[iPart];
         INT base_width, ruby_width = 0, part_width;
 
         // 幅の計測

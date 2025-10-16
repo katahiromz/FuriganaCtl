@@ -8,7 +8,8 @@
 #ifndef _INC_WINDOWS
     #include <windows.h>
 #endif
-#include <unordered_map>
+#include <map>
+#include <string>
 
 struct base_textbox_impl;
 class base_textbox;
@@ -35,7 +36,7 @@ class base_textbox;
     } class_name##AutoDynamicRegister##__LINE__;
 
 class base_textbox;
-using create_self_t = base_textbox *(*)(void);
+typedef base_textbox *(*create_self_t)(void);
 
 //////////////////////////////////////////////////////////////////////////////
 // base_textbox
@@ -45,7 +46,7 @@ class base_textbox
 public:
     DECLARE_DYNAMIC(base_textbox);
 
-    base_textbox(HWND hwnd = nullptr);
+    base_textbox(HWND hwnd = NULL);
     virtual ~base_textbox();
 
     DWORD get_style() const;
@@ -64,14 +65,14 @@ public:
 
 protected:
     friend struct base_textbox_impl;
-    struct base_textbox_impl *m_pimpl = nullptr;
+    struct base_textbox_impl *m_pimpl;
 
     virtual LRESULT CALLBACK window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     virtual void draw_client(HWND hwnd, HDC dc, RECT *client_rc);
 
 public:
     // for DECLARE_DYNAMIC/IMPLEMENT_DYNAMIC
-    typedef std::unordered_map<std::wstring, create_self_t> class_to_create_map_t;
+    typedef std::map<std::wstring, create_self_t> class_to_create_map_t;
 
     static class_to_create_map_t& class_to_create_map()
     {

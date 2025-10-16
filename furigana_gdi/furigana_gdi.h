@@ -6,7 +6,7 @@
 
 #include <string>
 #include <vector>
-#include <cstdint>
+#include "pstdint.h"
 
 // 一行のフリガナ付きテキストを描画する。
 INT DrawFuriganaTextLine(

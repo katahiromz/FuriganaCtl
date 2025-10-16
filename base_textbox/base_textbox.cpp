@@ -10,7 +10,7 @@
 
 static inline void out_of_memory() {
     OutputDebugStringA("Out of memory!\n");
-    MessageBoxA(nullptr, "Out of memory!", "Error", MB_ICONERROR);
+    MessageBoxA(NULL, "Out of memory!", "Error", MB_ICONERROR);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ BOOL base_textbox_impl::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
         m_font = CreateFontIndirectW(&lf);
         m_own_font = true;
     } else {
-        m_font = nullptr;
+        m_font = NULL;
         m_own_font = false;
     }
 
@@ -43,7 +43,7 @@ BOOL base_textbox_impl::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
 void base_textbox_impl::OnDestroy(HWND hwnd) {
     if (m_own_font) {
         ::DeleteObject(m_font);
-        m_font = nullptr;
+        m_font = NULL;
         m_own_font = false;
     }
 }
@@ -65,7 +65,7 @@ void base_textbox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     m_own_font = false;
 
     if (fRedraw)
-        ::InvalidateRect(hwndCtl, nullptr, TRUE);
+        ::InvalidateRect(hwndCtl, NULL, TRUE);
 }
 
 // WM_GETTEXT
@@ -113,12 +113,12 @@ void base_textbox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
 
     lstrcpynW(m_text, lpszText, required_capacity);
     m_text_length = text_len;
-    ::InvalidateRect(hwnd, nullptr, TRUE);
+    ::InvalidateRect(hwnd, NULL, TRUE);
 }
 
 // WM_PAINT
 void base_textbox_impl::OnPaint(HWND hwnd) {
-    paint_client(hwnd, nullptr);
+    paint_client(hwnd, NULL);
 }
 
 // WM_PAINT, WM_PRINTCLIENT
@@ -134,7 +134,7 @@ void base_textbox_impl::paint_client(HWND hwnd, HDC hDC) {
     RECT client_rect;
     ::GetClientRect(hwnd, &client_rect);
 
-    HGDIOBJ old_font = nullptr;
+    HGDIOBJ old_font = NULL;
     if (m_font)
         old_font = ::SelectObject(dc, m_font);
 
@@ -193,12 +193,12 @@ base_textbox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     base_textbox *self = get_self(hwnd);
     if (!self) {
         if (uMsg == WM_NCCREATE) {
-            auto cs = reinterpret_cast<CREATESTRUCT *>(lParam);
+            CREATESTRUCT *cs = reinterpret_cast<CREATESTRUCT *>(lParam);
             std::wstring class_name = cs->lpszClass;
             ::CharUpperW(&class_name[0]);
-            create_self_t create_self = class_to_create_map()[class_name];
+            create_self_t create_self = (*class_to_create_map)()[class_name];
             assert(create_self);
-            self = (*create_self)();
+            self = create_self();
             if (!self || !self->m_pimpl) {
                 out_of_memory();
                 return FALSE;
@@ -270,11 +270,11 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
         OutputDebugStringA("DLL_PROCESS_ATTACH\n");
-        base_textbox::register_class(nullptr);
+        base_textbox::register_class(NULL);
         break;
     case DLL_PROCESS_DETACH:
         OutputDebugStringA("DLL_PROCESS_DETACH\n");
-        base_textbox::unregister_class(nullptr);
+        base_textbox::unregister_class(NULL);
         break;
     }
     return TRUE;

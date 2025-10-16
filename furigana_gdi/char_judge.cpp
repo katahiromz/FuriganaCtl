@@ -28,8 +28,8 @@ bool is_surrogate_pair_kanji(wchar_t high, wchar_t low) {
 bool is_surrogate_pair_kana(wchar_t high, wchar_t low) {
     UINT code_point = decode_surrogate_pair(high, low);
     // U+1B000 .. U+1B0FF
-    constexpr UINT KANA_SUPPLEMENT_START = 0x1B000;
-    constexpr UINT KANA_SUPPLEMENT_END   = 0x1B0FF;
+    UINT KANA_SUPPLEMENT_START = 0x1B000;
+    UINT KANA_SUPPLEMENT_END   = 0x1B0FF;
     return (KANA_SUPPLEMENT_START <= code_point && code_point <= KANA_SUPPLEMENT_END);
 }
 

@@ -9,19 +9,24 @@
 // base_textbox_impl
 
 struct base_textbox_impl {
-    base_textbox *m_self = nullptr;
-    HWND m_hwnd = nullptr;
-    HWND m_hwndParent = nullptr;
-    HFONT m_font = nullptr;
-    bool m_own_font = false;
-    wchar_t *m_text = nullptr;
-    INT m_text_length = 0;
-    INT m_text_capacity = 0;
+    base_textbox *m_self;
+    HWND m_hwnd;
+    HWND m_hwndParent;
+    HFONT m_font;
+    bool m_own_font;
+    wchar_t *m_text;
+    INT m_text_length;
+    INT m_text_capacity;
 
     base_textbox_impl(HWND hwnd, base_textbox *self) {
         m_self = self;
         m_hwnd = hwnd;
-        m_hwndParent = hwnd ? ::GetParent(hwnd) : nullptr;
+        m_hwndParent = hwnd ? ::GetParent(hwnd) : NULL;
+        m_font = NULL;
+        m_own_font = false;
+        m_text = NULL;
+        m_text_length = 0;
+        m_text_capacity = 0;
     }
     virtual ~base_textbox_impl() {
         if (m_own_font && m_font)
@@ -29,7 +34,7 @@ struct base_textbox_impl {
         delete[] m_text;
     }
 
-    void paint_client(HWND hwnd, HDC hDC = nullptr);
+    void paint_client(HWND hwnd, HDC hDC = NULL);
 
     virtual BOOL OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
     virtual void OnDestroy(HWND hwnd);
