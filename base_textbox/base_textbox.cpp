@@ -22,7 +22,6 @@ struct base_textbox_impl_t {
     HWND m_hwndParent = nullptr;
     HFONT m_font = nullptr;
     bool m_own_font = false;
-    WNDPROC m_old_wndproc = nullptr;
     wchar_t *m_text = nullptr;
     INT m_text_length = 0;
     INT m_text_capacity = 0;
@@ -218,27 +217,9 @@ BOOL base_textbox_t::unregister_class(HINSTANCE inst, LPCWSTR class_name) {
     return ::UnregisterClassW(class_name, inst);
 }
 
-void base_textbox_t::subclass(HWND hwnd, WNDPROC new_wndproc) {
-    assert(!m_pimpl->m_hwnd);
-    assert(new_wndproc);
-    m_pimpl->m_hwnd = hwnd;
-    m_pimpl->m_old_wndproc = (WNDPROC)SetWindowLongPtrW(hwnd, GWLP_WNDPROC, (LONG_PTR)new_wndproc);
-    assert(m_pimpl->m_old_wndproc);
-}
-
-void base_textbox_t::unsubclass() {
-    if (!m_pimpl->m_hwnd)
-        return;
-    SetWindowLongPtrW(m_pimpl->m_hwnd, GWLP_WNDPROC, (LONG_PTR)m_pimpl->m_old_wndproc);
-    m_pimpl->m_hwnd = nullptr;
-}
-
 LRESULT CALLBACK
 base_textbox_t::def_window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    if (m_pimpl->m_old_wndproc)
-        return ::CallWindowProcW(m_pimpl->m_old_wndproc, hwnd, uMsg, wParam, lParam);
-    else
-        return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
+    return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
 LRESULT CALLBACK
@@ -261,11 +242,7 @@ base_textbox_t::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
     if (uMsg == WM_NCDESTROY) {
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-        if (self->m_pimpl->m_old_wndproc) {
-            self->unsubclass();
-        } else {
-            delete self;
-        }
+        delete self;
     }
 
     return ret;
