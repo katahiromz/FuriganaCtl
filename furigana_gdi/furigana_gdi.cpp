@@ -103,10 +103,10 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& tex
  *
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
  * @param compound_text 描画したい、一行のルビ コンパウンド テキスト。
- * @param flags 未使用。
  * @param prc 描画する位置とサイズ。描画または計測後はサイズが変更される。
  * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
  * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
+ * @param flags 未使用。
  * @return 折り返しがない場合は -1。折り返しがある場合は、折り返し場所のルビ コンパウンド テキストの文字インデックス。
  */
 INT DrawFuriganaTextLine(
