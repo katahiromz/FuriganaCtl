@@ -70,9 +70,9 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
 }
 
 INT FuriganaCtl::HitTest(INT x, INT y) {
-    x -= pimpl()->m_delta_x + pimpl()->m_margin_rect.left;
+    x -= pimpl()->m_margin_rect.left;
     y -= pimpl()->m_margin_rect.top;
-    return HitTestTextPart(pimpl()->m_parts, x, y);
+    return HitTestTextRun(pimpl()->m_run, x, y);
 }
 
 void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
@@ -80,8 +80,10 @@ void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT
         return;
 
     SetCapture(hwnd);
+
     INT iPart = HitTest(x, y);
-    pimpl()->m_selection_start = pimpl()->m_selection_end = iPart;
+    TextRun& run = pimpl()->m_run;
+    run.m_selection_start = run.m_selection_end = iPart;
     invalidate();
 }
 
@@ -89,7 +91,8 @@ void FuriganaCtl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
     if (GetCapture() != hwnd)
         return;
     INT iPart = HitTest(x, y);
-    pimpl()->m_selection_end = iPart;
+    TextRun& run = pimpl()->m_run;
+    run.m_selection_end = iPart;
 
     invalidate();
 }
@@ -99,7 +102,8 @@ void FuriganaCtl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
         return;
 
     INT iPart = HitTest(x, y);
-    pimpl()->m_selection_end = iPart;
+    TextRun& run = pimpl()->m_run;
+    run.m_selection_end = iPart;
 
     ReleaseCapture();
     invalidate();
@@ -141,21 +145,19 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     if (style & ES_CENTER) flags |= DT_CENTER;
     if (style & ES_RIGHT) flags |= DT_RIGHT;
 
-    SetPartsSelection(pimpl()->m_parts, pimpl()->m_selection_start, pimpl()->m_selection_end);
+    UpdateTextRunSelection(pimpl()->m_run);
 
-    DrawFuriganaOneLineText(
+    DrawTextRun(
         dc,
-        pimpl()->m_text,
-        pimpl()->m_parts,
+        pimpl()->m_run,
         client_rc,
         pimpl()->m_font,
         pimpl()->m_sub_font,
-        pimpl()->m_delta_x,
         flags);
 }
 
 void FuriganaCtl::invalidate() {
-    ParseRubyCompoundText(pimpl()->m_parts, pimpl()->m_text);
+    ParseTextRun(pimpl()->m_run, pimpl()->m_text);
     BaseTextBox::invalidate();
 }
 
