@@ -69,9 +69,46 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
     return ::UnregisterClassW(get_class_name(), inst);
 }
 
+INT FuriganaCtl::HitTest(INT x, INT y) {
+    return HitTestTextPart(pimpl()->m_parts, x - pimpl()->m_delta_x, y);
+}
+
+void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
+    if (fDoubleClick)
+        return;
+
+    SetCapture(hwnd);
+    INT iPart = HitTest(x, y);
+    pimpl()->m_selection_start = pimpl()->m_selection_end = iPart;
+    invalidate();
+}
+
+void FuriganaCtl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
+    if (GetCapture() != hwnd)
+        return;
+    INT iPart = HitTest(x, y);
+    pimpl()->m_selection_end = iPart;
+
+    invalidate();
+}
+
+void FuriganaCtl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
+    if (GetCapture() != hwnd)
+        return;
+
+    INT iPart = HitTest(x, y);
+    pimpl()->m_selection_end = iPart;
+
+    ReleaseCapture();
+    invalidate();
+}
+
 LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg)
     {
+        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, OnLButtonDown);
+        HANDLE_MSG(hwnd, WM_MOUSEMOVE, OnMouseMove);
+        HANDLE_MSG(hwnd, WM_LBUTTONUP, OnLButtonUp);
     case FC_SETRUBYRATIO:
         if ((INT)wParam >= 0 && (INT)lParam > 0)
         {
@@ -96,8 +133,7 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     if (style & ES_CENTER) flags |= DT_CENTER;
     if (style & ES_RIGHT) flags |= DT_RIGHT;
 
-    if (pimpl()->m_parts.size())
-        pimpl()->m_parts[0].selected = true;
+    SetPartsSelection(pimpl()->m_parts, pimpl()->m_selection_start, pimpl()->m_selection_end);
 
     DrawFuriganaOneLineText(
         dc,
@@ -106,6 +142,7 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
         client_rc,
         pimpl()->m_font,
         pimpl()->m_sub_font,
+        pimpl()->m_delta_x,
         flags);
 }
 

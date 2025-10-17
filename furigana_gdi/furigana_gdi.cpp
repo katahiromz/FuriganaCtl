@@ -13,6 +13,24 @@ INT get_text_width(HDC dc, LPCWSTR text, INT len) {
     return size.cx;
 }
 
+void SetPartsSelection(std::vector<TextPart>& parts, INT iStart, INT iEnd) {
+    if (iStart == -1) {
+        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
+            parts[iPart].selected = false;
+        }
+    } else {
+        if (iEnd == -1)
+            iEnd = (INT)parts.size();
+
+        if (iStart > iEnd)
+            std::swap(iStart, iEnd);
+
+        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
+            parts[iPart].selected = (iStart <= (INT)iPart && (INT)iPart < iEnd);
+        }
+    }
+}
+
 // ルビコンパウンドテキストをパーツに分解する
 bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& text) {
     parts.clear();
@@ -123,6 +141,17 @@ CalcTextPart(
     SelectObject(dc, hFontOld);
 }
 
+INT HitTestTextPart(const std::vector<TextPart>& parts, INT x, INT y) {
+    INT current_x = 0;
+    for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
+        INT part_width = parts[iPart].part_width;
+        current_x += parts[iPart].part_width;
+        if (x < current_x - part_width / 2)
+            return (INT)iPart;
+    }
+    return (INT)parts.size();
+}
+
 INT
 CalcTextHeight(
     HDC dc,
@@ -222,6 +251,7 @@ size_t DrawFuriganaOneLineText(
     LPRECT prc,
     HFONT hBaseFont,
     HFONT hRubyFont,
+    INT& delta_x,
     UINT flags)
 {
     if (text.length() <= 0 || parts.empty()) {
@@ -256,12 +286,14 @@ size_t DrawFuriganaOneLineText(
     INT line_width = metric.x_extent, block_height = metric.y_extent;
     INT max_width = metric.max_width;
 
-    INT current_x = prc->left;
     if (flags & DT_CENTER)
-        current_x += (max_width - line_width) / 2;
+        delta_x = (max_width - line_width) / 2;
     else if (flags & DT_RIGHT)
-        current_x += (max_width - line_width);
+        delta_x = (max_width - line_width);
+    else
+        delta_x = 0;
 
+    INT current_x = prc->left + delta_x;
     const INT base_y = prc->top + ruby_height; // ベーステキストのY座標
 
     // しきい値を取得する

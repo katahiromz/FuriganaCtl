@@ -254,7 +254,7 @@ void BaseTextBox::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
 }
 
 void BaseTextBox::invalidate() {
-    ::InvalidateRect(m_pimpl->m_hwnd, NULL, TRUE);
+    ::InvalidateRect(m_pimpl->m_hwnd, NULL, FALSE);
 }
 
 LPCWSTR BaseTextBox::get_text() const {

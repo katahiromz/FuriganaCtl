@@ -36,4 +36,9 @@ protected:
 
     virtual LRESULT CALLBACK window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     void draw_client(HWND hwnd, HDC dc, RECT *client_rc) override;
+
+    INT HitTest(INT x, INT y);
+    void OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags);
+    void OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags);
+    void OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags);
 };

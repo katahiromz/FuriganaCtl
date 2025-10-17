@@ -37,6 +37,9 @@ struct TextPart {
     }
 };
 
+void SetPartsSelection(std::vector<TextPart>& parts, INT iStart, INT iEnd);
+INT HitTestTextPart(const std::vector<TextPart>& parts, INT x, INT y);
+
 bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& text);
 
 size_t DrawFuriganaOneLineText(
@@ -46,4 +49,5 @@ size_t DrawFuriganaOneLineText(
     LPRECT prc,
     HFONT hBaseFont,
     HFONT hRubyFont,
+    INT& delta_x,
     UINT flags);
