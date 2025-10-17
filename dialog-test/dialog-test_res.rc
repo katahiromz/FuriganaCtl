@@ -38,9 +38,12 @@ STYLE DS_CENTER | DS_MODALFRAME | WS_POPUPWINDOW | WS_CAPTION
 FONT 12, "ピザPゴシック", 400, 0, 128
 {
     EDITTEXT edt1, 0, 5, 295, 70, ES_WANTRETURN | ES_AUTOVSCROLL | ES_MULTILINE | WS_VSCROLL, WS_EX_CLIENTEDGE
-    CONTROL "This is a test.", edt2, "FuriganaCtl", WS_VSCROLL, 0, 75, 295, 65, WS_EX_CLIENTEDGE
+    CONTROL "This is a test.", edt2, "FURIGANACTL", WS_VSCROLL, 0, 75, 295, 65, WS_EX_CLIENTEDGE
     DEFPUSHBUTTON "OK", IDOK, 170, 150, 60, 15
     PUSHBUTTON "Cancel", IDCANCEL, 235, 150, 60, 15
+    AUTORADIOBUTTON "Left", rad1, 5, 145, 30, 15, WS_TABSTOP
+    AUTORADIOBUTTON "Center", rad2, 40, 145, 35, 15, WS_TABSTOP
+    AUTORADIOBUTTON "Right", rad3, 80, 145, 35, 15, WS_TABSTOP
 }
 
 //////////////////////////////////////////////////////////////////////////////

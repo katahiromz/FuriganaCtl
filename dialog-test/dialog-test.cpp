@@ -6,18 +6,31 @@
 
 HFONT g_hFont = NULL;
 
+void SetAlign(HWND hwnd, DWORD align)
+{
+    HWND hwndEdt2 = GetDlgItem(hwnd, edt2);
+
+    bool center = false;
+    bool right = true;
+    DWORD style = GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
+    style &= ~(ES_CENTER | ES_RIGHT);
+    if (align & ES_CENTER) style |= ES_CENTER;
+    if (align & ES_RIGHT) style |= ES_RIGHT;
+    SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
+
+    InvalidateRect(hwndEdt2, NULL, TRUE);
+}
+
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
     HWND hwndEdt2 = GetDlgItem(hwnd, edt2);
 
     bool multi = true;
-    bool center = false;
-    bool right = true;
     DWORD style = GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
     if (multi) style |= ES_MULTILINE;
-    if (center) style |= ES_CENTER;
-    if (right) style |= ES_RIGHT;
     SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
+
+    CheckRadioButton(hwnd, rad1, rad3, rad1);
 
     LOGFONT lf;
     ZeroMemory(&lf, sizeof(lf));
@@ -29,8 +42,8 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     SendDlgItemMessage(hwnd, edt2, FC_SETRUBYRATIO, 4, 5);
     SendDlgItemMessage(hwnd, edt2, WM_SETFONT, (WPARAM)g_hFont, TRUE);
 
-    SetDlgItemText(hwnd, edt1, TEXT("志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。第三次世界大戦(だいさんじせかいたいせん)にならないように。志布志(しぶし)"));
-    SetDlgItemText(hwnd, edt2, TEXT("志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。第三次世界大戦(だいさんじせかいたいせん)にならないように。志布志(しぶし)"));
+    SetDlgItemText(hwnd, edt1, TEXT("志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。"));
+    SetDlgItemText(hwnd, edt2, TEXT("志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。"));
     return TRUE;
 }
 
@@ -47,6 +60,15 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
     case IDOK:
     case IDCANCEL:
         EndDialog(hwnd, id);
+        break;
+    case rad1:
+        SetAlign(hwnd, ES_LEFT);
+        break;
+    case rad2:
+        SetAlign(hwnd, ES_CENTER);
+        break;
+    case rad3:
+        SetAlign(hwnd, ES_RIGHT);
         break;
     case edt1:
         {
