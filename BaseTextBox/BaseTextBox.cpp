@@ -65,7 +65,7 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     m_own_font = false;
 
     if (fRedraw)
-        ::InvalidateRect(hwndCtl, NULL, TRUE);
+        m_self->invalidate();
 }
 
 // WM_GETTEXT
@@ -113,7 +113,7 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
 
     lstrcpynW(m_text, lpszText, required_capacity);
     m_text_length = text_len;
-    ::InvalidateRect(hwnd, NULL, TRUE);
+    m_self->invalidate();
 }
 
 // WM_PAINT
@@ -251,6 +251,10 @@ void BaseTextBox::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     ::DrawText(dc, m_pimpl->m_text, m_pimpl->m_text_length, client_rc, 
                DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
     ::SetBkMode(dc, old_mode);
+}
+
+void BaseTextBox::invalidate() {
+    ::InvalidateRect(m_pimpl->m_hwnd, NULL, TRUE);
 }
 
 LPCWSTR BaseTextBox::get_text() const {

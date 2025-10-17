@@ -35,8 +35,6 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     m_sub_font = ::CreateFontIndirect(&lf);
 
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
-
-    ::InvalidateRect(hwndCtl, NULL, FALSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -89,15 +87,31 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
 }
 
 void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
-    FillRect(dc, client_rc, GetStockBrush(WHITE_BRUSH));
+    FillRect(dc, client_rc, GetSysColorBrush(COLOR_WINDOW));
 
-    DWORD style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    DWORD style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+
     DWORD flags = 0;
     if (!(style & ES_MULTILINE)) flags |= DT_SINGLELINE;
-    if (flags & ES_CENTER) flags |= DT_CENTER;
-    if (flags & ES_RIGHT) flags |= DT_RIGHT;
+    if (style & ES_CENTER) flags |= DT_CENTER;
+    if (style & ES_RIGHT) flags |= DT_RIGHT;
 
-    DrawFuriganaTextLine(dc, get_text(), client_rc, pimpl()->m_font, pimpl()->m_sub_font, flags);
+    if (pimpl()->m_parts.size())
+        pimpl()->m_parts[0].selected = true;
+
+    DrawFuriganaOneLineText(
+        dc,
+        pimpl()->m_text,
+        pimpl()->m_parts,
+        client_rc,
+        pimpl()->m_font,
+        pimpl()->m_sub_font,
+        flags);
+}
+
+void FuriganaCtl::invalidate() {
+    ParseRubyCompoundText(pimpl()->m_parts, pimpl()->m_text);
+    BaseTextBox::invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////////

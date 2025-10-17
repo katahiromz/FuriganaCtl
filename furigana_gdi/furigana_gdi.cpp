@@ -1,5 +1,6 @@
 ﻿#include "furigana_gdi.h"
 #include "char_judge.h"
+#include <assert.h>
 
 #undef min
 #undef max
@@ -12,26 +13,10 @@ INT get_text_width(HDC dc, LPCWSTR text, INT len) {
     return size.cx;
 }
 
-// テキストの要素を表す構造体
-struct TextPart {
-    enum Type {
-        NORMAL, // 通常テキスト
-        RUBY    // ルビブロック
-    } type;
-
-    // 元の compound_text 内での開始インデックス
-    size_t start_index;
-    size_t end_index;
-
-    size_t base_index;
-    size_t base_len;
-
-    size_t ruby_index;
-    size_t ruby_len;
-};
-
 // ルビコンパウンドテキストをパーツに分解する
 bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& text) {
+    parts.clear();
+
     size_t ich = 0;
     bool has_ruby = false;
     while (ich < text.length()) {
@@ -41,7 +26,8 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& tex
             if (paren_start != text.npos) {
                 intptr_t furigana_end = text.find(L")}", paren_start);
                 if (furigana_end != text.npos) {
-                    TextPart part = { TextPart::RUBY };
+                    TextPart part;
+                    part.type = TextPart::RUBY;
                     part.start_index = ich;
                     part.end_index = furigana_end + 2;
                     part.base_index = ich + 1;
@@ -67,7 +53,8 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& tex
                 if (kana_len > 0) { // 丸カッコの後にカナがある？
                     size_t ich2 = ich; // フリガナの終わり？
                     if (ich2 < text.length() && text[ich2] == L')') { // フリガナの次に「丸カッコ閉じる」がある？
-                        TextPart part = { TextPart::RUBY };
+                        TextPart part;
+                        part.type = TextPart::RUBY;
                         part.start_index = ich0;
                         part.end_index = ich2 + 1;
                         part.base_index = ich0;
@@ -86,7 +73,8 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& tex
 
         size_t char_index = ich;
         size_t char_len = skip_one_real_char(text, ich);
-        TextPart part = { TextPart::NORMAL };
+        TextPart part;
+        part.type = TextPart::NORMAL;
         part.start_index = char_index;
         part.end_index = ich;
         part.base_index = char_index;
@@ -98,62 +86,183 @@ bool ParseRubyCompoundText(std::vector<TextPart>& parts, const std::wstring& tex
     return has_ruby;
 }
 
+struct MetricInfo {
+    INT x_extent; // [out]
+    INT y_extent; // [out]
+    size_t iPart; // [out]
+    INT ruby_height; // [out]
+    INT max_width; // [in]
+    bool has_ruby; // [out]
+};
+
+void
+CalcTextPart(
+    const std::wstring& text,
+    TextPart& part,
+    HDC dc,
+    HFONT hBaseFont,
+    HFONT hRubyFont)
+{
+    if (part.part_width != -1)
+        return; // 計算済み
+
+    // 幅の計測
+    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
+    if (part.type == TextPart::NORMAL) {
+        part.base_width = get_text_width(dc, &text[part.base_index], part.base_len);
+        part.part_width = part.base_width;
+        part.ruby_width = 0;
+    } else { // TextPart::RUBY
+        part.base_width = get_text_width(dc, &text[part.base_index], part.base_len);
+        SelectObject(dc, hRubyFont);
+        part.ruby_width = get_text_width(dc, &text[part.ruby_index], part.ruby_len);
+
+        // ルビブロックの幅は、ベースとルビの幅の大きい方
+        part.part_width = std::max(part.base_width, part.ruby_width);
+    }
+    SelectObject(dc, hFontOld);
+}
+
+INT
+CalcTextHeight(
+    HDC dc,
+    INT& base_height,
+    INT& ruby_height,
+    bool has_ruby,
+    HFONT hBaseFont,
+    HFONT hRubyFont)
+{
+    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
+    TEXTMETRICW tm_base;
+    GetTextMetricsW(dc, &tm_base);
+    base_height = tm_base.tmHeight;
+
+    INT y_extent;
+    if (has_ruby) {
+        SelectObject(dc, hRubyFont);
+        TEXTMETRICW tm_ruby;
+        GetTextMetricsW(dc, &tm_ruby);
+        ruby_height = tm_ruby.tmHeight;
+        // ルビ付き行の高さ: ルビの高さ + ベースの高さ
+        y_extent = ruby_height + base_height;
+    } else {
+        ruby_height = 0;
+        y_extent = base_height;
+    }
+    SelectObject(dc, hFontOld);
+
+    return y_extent;
+}
+
+size_t
+GetRubyCompoundMetric(
+    MetricInfo& metric,
+    const std::wstring& text,
+    std::vector<TextPart>& parts,
+    HFONT hBaseFont,
+    HFONT hRubyFont)
+{
+    // metricのメンバーを参照
+    INT& x_extent = metric.x_extent;
+    INT& y_extent = metric.y_extent;
+    size_t& iPart = metric.iPart;
+    INT& ruby_height = metric.ruby_height;
+    INT& max_width = metric.max_width;
+    bool& has_ruby = metric.has_ruby;
+
+    HDC dc = CreateCompatibleDC(NULL);
+
+    // ルビがあるか？
+    for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
+        TextPart& part = parts[iPart];
+        if (part.type == TextPart::RUBY && part.ruby_len > 0) {
+            has_ruby = true;
+        }
+    }
+
+    // フォントメトリクスと行の高さを決定
+    INT base_height;
+    y_extent = CalcTextHeight(dc, base_height, ruby_height, has_ruby, hBaseFont, hRubyFont);
+
+    x_extent = 0;
+    for (iPart = 0; iPart < parts.size(); ++iPart) {
+        TextPart& part = parts[iPart];
+
+        // パートを計算
+        CalcTextPart(text, part, dc, hBaseFont, hRubyFont);
+
+        // 最大幅を超えたら、折り返し。
+        // TODO: 禁則処理
+        if (max_width >= 0 && x_extent + part.part_width > max_width && x_extent == 0) {
+            break;
+        }
+
+        x_extent += part.part_width;
+    }
+
+    DeleteDC(dc);
+    return iPart;
+}
+
 /**
  * 一行のフリガナ付きテキストを描画する。
  *
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
- * @param compound_text 描画したい、一行のルビ コンパウンド テキスト。
- * @param prc 描画する位置とサイズ。描画または計測後はサイズが変更される。
+ * @param text 描画したい、一行のルビ コンパウンド テキスト。
+ * @param prc 描画する位置とサイズ。計測後はサイズが変更される。
  * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
  * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
- * @param flags 未使用。
- * @return 折り返しがない場合は -1。折り返しがある場合は、折り返し場所のルビ コンパウンド テキストの文字インデックス。
+ * @param flags 次のフラグを使用可能: DT_NOCLIP
+ * @return 折り返しがない場合は std::wstring::npos。折り返しがある場合は、折り返し場所のパートのインデックス。
  */
-INT DrawFuriganaTextLine(
+size_t DrawFuriganaOneLineText(
     HDC dc,
-    const std::wstring& compound_text,
+    const std::wstring& text,
+    std::vector<TextPart>& parts,
     LPRECT prc,
     HFONT hBaseFont,
     HFONT hRubyFont,
     UINT flags)
 {
-    const std::wstring& text = compound_text;
-
-    if (text.length() <= 0) {
+    if (text.length() <= 0 || parts.empty()) {
         prc->right = prc->left;
         prc->bottom = prc->top;
-        return -1;
+        return std::wstring::npos;
     }
 
-    std::vector<TextPart> parts;
-    bool has_ruby = ParseRubyCompoundText(parts, text);
-    if (parts.empty()) return -1;
+    if (dc && (flags & (DT_CENTER | DT_RIGHT))) {
+        UINT new_flags = flags & ~(DT_CENTER | DT_RIGHT);
+        RECT rc = *prc;
+        INT max_width = rc.right - rc.left;
+        size_t break_iPart = DrawFuriganaOneLineText(
+            NULL,
+            text,
+            parts,
+            &rc,
+            hBaseFont,
+            hRubyFont,
+            new_flags);
+        rc = *prc;
+        return DrawFuriganaOneLineText(
+            dc,
+            text,
+            parts,
+            &rc,
+            hBaseFont,
+            hRubyFont,
+            new_flags);
+    }
 
     // dcがNULLの場合、計測用に画面のHDCを使用する
-    HDC hdc = dc ? dc : GetDC(NULL);
-    if (!hdc) return -1;
-
-    // 1. フォントメトリクスと行の高さを決定
-    INT base_height, ruby_height, block_height;
-    HGDIOBJ hFontOld = SelectObject(hdc, hBaseFont);
-    TEXTMETRICW tm_base;
-    GetTextMetricsW(hdc, &tm_base);
-    base_height = tm_base.tmHeight;
-
-    if (has_ruby) {
-        SelectObject(hdc, hRubyFont);
-        TEXTMETRICW tm_ruby;
-        GetTextMetricsW(hdc, &tm_ruby);
-        ruby_height = tm_ruby.tmHeight;
-        // ルビ付き行の高さ: ルビの高さ + ベースの高さ
-        block_height = ruby_height + base_height;
-    } else {
-        ruby_height = 0;
-        block_height = base_height;
+    HDC hdc = dc ? dc : CreateCompatibleDC(NULL);
+    if (!hdc) {
+        assert(0);
+        prc->right = prc->left;
+        prc->bottom = prc->top;
+        return std::wstring::npos;
     }
-    SelectObject(hdc, hFontOld); // フォントを元に戻す
 
-    // 2. 描画/計測の準備
+    // 描画/計測の準備
     INT saved_dc = 0;
     if (dc && !(flags & DT_NOCLIP)) {
         saved_dc = SaveDC(hdc);
@@ -161,101 +270,98 @@ INT DrawFuriganaTextLine(
     }
     if (dc) SetBkMode(dc, TRANSPARENT); // 背景モード設定
 
-    const INT max_width = prc->right - prc->left;
+    // メトリック情報を取得
+    MetricInfo metric;
+    metric.max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
+    size_t break_iPart = GetRubyCompoundMetric(metric, text, parts, hBaseFont, hRubyFont);
+
+    INT ruby_height = metric.ruby_height;
+    INT line_width = metric.x_extent, block_height = metric.y_extent;
+
+    INT max_width = metric.max_width;
     INT current_x = prc->left;
-    INT wrap_index = -1;
+    if (flags & DT_CENTER) current_x += (max_width - line_width) / 2;
+    else if (flags & DT_RIGHT) current_x += (max_width - line_width);
     const INT base_y = prc->top + ruby_height; // ベーステキストのY座標
 
-    hFontOld = SelectObject(hdc, hBaseFont);
+    // しきい値を取得する
+    HGDIOBJ hFontOld = SelectObject(hdc, hBaseFont);
     INT gap_threshold = get_text_width(hdc, L"漢i", 2);
     SelectObject(hdc, hFontOld);
 
-    // 3. パーツを順に処理し、幅を計測/描画する
+    // パーツを順に処理し、計測または描画する
     for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-        const TextPart& part = parts[iPart];
-        INT base_width, ruby_width = 0, part_width;
+        TextPart& part = parts[iPart];
 
-        // 幅の計測
-        if (part.type == TextPart::NORMAL) {
-            hFontOld = SelectObject(hdc, hBaseFont);
-            base_width = part_width = get_text_width(hdc, &text[part.base_index], part.base_len);
-            SelectObject(hdc, hFontOld);
-        } else { // TextPart::RUBY
-            hFontOld = SelectObject(hdc, hBaseFont);
-            base_width = get_text_width(hdc, &text[part.base_index], part.base_len);
-            SelectObject(hdc, hRubyFont);
-            ruby_width = get_text_width(hdc, &text[part.ruby_index], part.ruby_len);
-            SelectObject(hdc, hFontOld);
+        if (break_iPart == iPart) // 折り返し判定
+            break;
 
-            // ルビブロックの幅は、ベースとルビの幅の大きい方
-            part_width = std::max(base_width, ruby_width);
+        // 必要なら再計算
+        CalcTextPart(text, part, dc, hBaseFont, hRubyFont);
+
+        // 描画対象の長方形
+        RECT rc = { current_x, prc->top, current_x + part.part_width, prc->top + block_height };
+
+        if (part.selected) { // 選択状態か？
+            FillRect(hdc, &rc, GetSysColorBrush(COLOR_HIGHLIGHT));
+            SetTextColor(hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+        } else {
+            FillRect(hdc, &rc, GetSysColorBrush(COLOR_WINDOW));
+            SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
         }
 
-        // 4. 折り返し判定
-        if (!(flags & DT_SINGLELINE) && current_x + part_width > prc->right) {
-            // 最初のパーツ全体が収まらない場合を除き、折り返し位置を設定
-            if (current_x > prc->left) {
-                wrap_index = part.start_index;
-                break;
-            }
-        }
-
-        // 5. 描画 (dc != NULL の場合)
-        if (dc) {
+        if (dc && RectVisible(dc, &rc)) { // 描画すべきか？
             if (part.type == TextPart::NORMAL) {
                 // 通常テキストの描画 (ベースラインに描画)
                 hFontOld = SelectObject(dc, hBaseFont);
                 ExtTextOutW(dc, current_x, base_y, 0, NULL, &text[part.base_index], part.base_len, NULL);
                 SelectObject(dc, hFontOld);
             } else { // TextPart::RUBY
-                // A. ベーステキストの描画
-                hFontOld = SelectObject(dc, hBaseFont);
-
+                // ベーステキストの配置を決める
                 INT base_start_x = current_x;
-                if (part_width > base_width) {
-                    base_start_x += (part_width - base_width) / 2;
+                if (part.part_width > part.base_width) {
+                    base_start_x += (part.part_width - part.base_width) / 2;
                 }
 
-                ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &text[part.base_index], part.base_len, NULL);
-
-                SelectObject(dc, hFontOld);
-
-                // B. ルビテキストの描画 (SetTextCharacterExtraを使用)
-                hFontOld = SelectObject(dc, hRubyFont);
-
-                INT ruby_extra = 0;
-                INT ruby_start_x = current_x;
-
-                if (part_width - ruby_width > gap_threshold) {
+                // ルビの配置を決める
+                INT ruby_extra, ruby_start_x = current_x;
+                if (part.part_width - part.ruby_width > gap_threshold) {
+                    // 両端ぞろえ
+                    // SetTextCharacterExtraで使用する文字間スペースを設定
                     if (part.ruby_len > 1) {
-                        ruby_extra = (part_width - ruby_width) / (part.ruby_len - 1);
+                        ruby_extra = (part.part_width - part.ruby_width) / (part.ruby_len - 1);
                     }
                 } else {
-                    ruby_start_x += (part_width - ruby_width) / 2;
+                    // パート内で中央ぞろえ
+                    ruby_start_x += (part.part_width - part.ruby_width) / 2;
+                    ruby_extra = 0;
                 }
 
+                // ベーステキストの描画
+                hFontOld = SelectObject(dc, hBaseFont);
+                ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &text[part.base_index], part.base_len, NULL);
+                SelectObject(dc, hFontOld);
+
+                // ルビテキストの描画
+                hFontOld = SelectObject(dc, hRubyFont);
                 INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
                 ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &text[part.ruby_index], part.ruby_len, NULL);
                 SetTextCharacterExtra(dc, old_extra_ruby);
-
                 SelectObject(dc, hFontOld);
             }
         }
 
-        // 6. 次の描画位置に更新
-        current_x += part_width;
+        // 次の描画位置に更新
+        current_x += part.part_width;
     }
 
-    // 7. prc のサイズを更新
+    // prc のサイズを更新
     prc->right = current_x;
     prc->bottom = prc->top + block_height;
 
-    // 8. クリーンアップ
-    if (dc && !(flags & DT_NOCLIP)) {
-        RestoreDC(hdc, saved_dc);
-    }
-    if (!dc) ReleaseDC(NULL, hdc);
+    // クリーンアップ
+    if (dc && !(flags & DT_NOCLIP)) RestoreDC(hdc, saved_dc);
+    if (!dc) DeleteDC(hdc);
 
-    // 9. 戻り値
-    return wrap_index;
+    return break_iPart;
 }
