@@ -261,8 +261,10 @@ size_t DrawTextRun(
     std::vector<TextPart>& parts = run.m_parts;
 
     if (text.length() <= 0 || parts.empty()) {
-        prc->right = prc->left;
-        prc->bottom = prc->top;
+        if (!dc) {
+            prc->right = prc->left;
+            prc->bottom = prc->top;
+        }
         return std::wstring::npos;
     }
 
@@ -270,8 +272,10 @@ size_t DrawTextRun(
     HDC hdc = dc ? dc : CreateCompatibleDC(NULL);
     if (!hdc) {
         assert(0);
-        prc->right = prc->left;
-        prc->bottom = prc->top;
+        if (!dc) {
+            prc->right = prc->left;
+            prc->bottom = prc->top;
+        }
         return std::wstring::npos;
     }
 
