@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # project name and languages
-project(BaseTextBox CXX RC)
+project(FuriganaCtl CXX RC)
 
 # set output directory (build/)
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
