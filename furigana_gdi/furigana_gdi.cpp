@@ -113,6 +113,37 @@ struct MetricInfo {
     bool has_ruby; // [out]
 };
 
+INT
+CalcTextHeight(
+    HDC dc,
+    INT& base_height,
+    INT& ruby_height,
+    bool has_ruby,
+    HFONT hBaseFont,
+    HFONT hRubyFont)
+{
+    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
+    TEXTMETRICW tm_base;
+    GetTextMetricsW(dc, &tm_base);
+    base_height = tm_base.tmHeight;
+
+    INT y_extent;
+    if (has_ruby) {
+        SelectObject(dc, hRubyFont);
+        TEXTMETRICW tm_ruby;
+        GetTextMetricsW(dc, &tm_ruby);
+        ruby_height = tm_ruby.tmHeight;
+        // ルビ付き行の高さ: ルビの高さ + ベースの高さ
+        y_extent = ruby_height + base_height;
+    } else {
+        ruby_height = 0;
+        y_extent = base_height;
+    }
+    SelectObject(dc, hFontOld);
+
+    return y_extent;
+}
+
 void
 CalcTextPart(
     const std::wstring& text,
@@ -150,37 +181,6 @@ INT HitTestTextPart(const std::vector<TextPart>& parts, INT x, INT y) {
             return (INT)iPart;
     }
     return (INT)parts.size();
-}
-
-INT
-CalcTextHeight(
-    HDC dc,
-    INT& base_height,
-    INT& ruby_height,
-    bool has_ruby,
-    HFONT hBaseFont,
-    HFONT hRubyFont)
-{
-    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
-    TEXTMETRICW tm_base;
-    GetTextMetricsW(dc, &tm_base);
-    base_height = tm_base.tmHeight;
-
-    INT y_extent;
-    if (has_ruby) {
-        SelectObject(dc, hRubyFont);
-        TEXTMETRICW tm_ruby;
-        GetTextMetricsW(dc, &tm_ruby);
-        ruby_height = tm_ruby.tmHeight;
-        // ルビ付き行の高さ: ルビの高さ + ベースの高さ
-        y_extent = ruby_height + base_height;
-    } else {
-        ruby_height = 0;
-        y_extent = base_height;
-    }
-    SelectObject(dc, hFontOld);
-
-    return y_extent;
 }
 
 size_t

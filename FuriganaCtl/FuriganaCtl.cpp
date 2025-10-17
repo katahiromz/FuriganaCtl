@@ -70,7 +70,9 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
 }
 
 INT FuriganaCtl::HitTest(INT x, INT y) {
-    return HitTestTextPart(pimpl()->m_parts, x - pimpl()->m_delta_x, y);
+    x -= pimpl()->m_delta_x + pimpl()->m_margin_rect.left;
+    y -= pimpl()->m_margin_rect.top;
+    return HitTestTextPart(pimpl()->m_parts, x, y);
 }
 
 void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
@@ -125,6 +127,12 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
 
 void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     FillRect(dc, client_rc, GetSysColorBrush(COLOR_WINDOW));
+
+    const RECT& margin_rect = pimpl()->m_margin_rect;
+    client_rc->left += margin_rect.left;
+    client_rc->top += margin_rect.top;
+    client_rc->right -= margin_rect.right;
+    client_rc->bottom -= margin_rect.bottom;
 
     DWORD style = GetWindowLongPtrW(hwnd, GWL_STYLE);
 

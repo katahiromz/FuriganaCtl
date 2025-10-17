@@ -14,6 +14,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     INT m_delta_x;
     INT m_selection_start;
     INT m_selection_end;
+    RECT m_margin_rect;
     std::vector<TextPart> m_parts;
 
     FuriganaCtl_impl(HWND hwnd, BaseTextBox *self) : BaseTextBox_impl(hwnd, self) {
@@ -24,6 +25,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
         m_delta_x = 0;
         m_selection_start = -1;
         m_selection_end = -1;
+        SetRect(&m_margin_rect, 2, 2, 2, 2);
     }
 
     void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
