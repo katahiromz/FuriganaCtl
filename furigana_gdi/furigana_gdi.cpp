@@ -230,29 +230,6 @@ size_t DrawFuriganaOneLineText(
         return std::wstring::npos;
     }
 
-    if (dc && (flags & (DT_CENTER | DT_RIGHT))) {
-        UINT new_flags = flags & ~(DT_CENTER | DT_RIGHT);
-        RECT rc = *prc;
-        INT max_width = rc.right - rc.left;
-        size_t break_iPart = DrawFuriganaOneLineText(
-            NULL,
-            text,
-            parts,
-            &rc,
-            hBaseFont,
-            hRubyFont,
-            new_flags);
-        rc = *prc;
-        return DrawFuriganaOneLineText(
-            dc,
-            text,
-            parts,
-            &rc,
-            hBaseFont,
-            hRubyFont,
-            new_flags);
-    }
-
     // dcがNULLの場合、計測用に画面のHDCを使用する
     HDC hdc = dc ? dc : CreateCompatibleDC(NULL);
     if (!hdc) {
@@ -277,11 +254,14 @@ size_t DrawFuriganaOneLineText(
 
     INT ruby_height = metric.ruby_height;
     INT line_width = metric.x_extent, block_height = metric.y_extent;
-
     INT max_width = metric.max_width;
+
     INT current_x = prc->left;
-    if (flags & DT_CENTER) current_x += (max_width - line_width) / 2;
-    else if (flags & DT_RIGHT) current_x += (max_width - line_width);
+    if (flags & DT_CENTER)
+        current_x += (max_width - line_width) / 2;
+    else if (flags & DT_RIGHT)
+        current_x += (max_width - line_width);
+
     const INT base_y = prc->top + ruby_height; // ベーステキストのY座標
 
     // しきい値を取得する

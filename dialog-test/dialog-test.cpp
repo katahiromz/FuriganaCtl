@@ -11,8 +11,8 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     HWND hwndEdt2 = GetDlgItem(hwnd, edt2);
 
     bool multi = true;
-    bool center = true;
-    bool right = false;
+    bool center = false;
+    bool right = true;
     DWORD style = GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
     if (multi) style |= ES_MULTILINE;
     if (center) style |= ES_CENTER;
