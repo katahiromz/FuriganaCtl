@@ -27,15 +27,15 @@ static INT get_text_width(HDC dc, LPCWSTR text, INT len) {
 
 /**
  * パートの幅を計測する。
- * @param para 段落。
+ * @param doc 文書。
  * @param hBaseFont ベーステキストのフォント。
  * @param hRubyFont ルビテキストのフォント。
  */
-void TextPart::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
+void TextPart::UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
     // 幅の計測
-    HDC dc = para.m_dc;
+    HDC dc = doc.m_dc;
     HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
-    std::wstring& text = para.m_text;
+    std::wstring& text = doc.m_text;
     if (m_type == TextPart::NORMAL) {
         m_base_width = get_text_width(dc, &text[m_base_index], m_base_len);
         m_part_width = m_base_width;
@@ -55,23 +55,22 @@ void TextPart::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
 
 /**
  * ランの高さを計測する。
- * @param para 段落。
+ * @param doc 文書。
  * @param hBaseFont ベーステキストのフォント。
  * @param hRubyFont ルビテキストのフォント。
  */
-void TextRun::UpdateHeight(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
+void TextRun::UpdateHeight(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
     // ルビがあるか？
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
-        assert(0 <= iPart && iPart < (INT)para.m_parts.size());
-        TextPart& part = para.m_parts[iPart];
-        if (part.m_type == TextPart::RUBY && part.m_ruby_len > 0) {
+        assert(0 <= iPart && iPart < (INT)doc.m_parts.size());
+        TextPart& part = doc.m_parts[iPart];
+        if (part.m_type == TextPart::RUBY && part.m_ruby_len > 0)
             m_has_ruby = true;
-        }
     }
 
-    m_base_height = para.m_base_height;
+    m_base_height = doc.m_base_height;
     if (m_has_ruby) {
-        m_ruby_height = para.m_ruby_height;
+        m_ruby_height = doc.m_ruby_height;
         m_run_height = m_ruby_height + m_base_height;
     } else {
         m_ruby_height = 0;
@@ -81,27 +80,27 @@ void TextRun::UpdateHeight(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
 
 /**
  * ランの幅を計測する。
- * @param para 段落。
+ * @param doc 文書。
  * @param hBaseFont ベーステキストのフォント。
  * @param hRubyFont ルビテキストのフォント。
  */
-void TextRun::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
-    std::vector<TextPart>& parts = para.m_parts;
+void TextRun::UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
+    std::vector<TextPart>& parts = doc.m_parts;
     m_run_width = 0;
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
         TextPart& part = parts[iPart];
-        part.UpdateWidth(para, hBaseFont, hRubyFont);
+        part.UpdateWidth(doc, hBaseFont, hRubyFont);
         m_run_width += part.m_part_width;
     }
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// TextPara
+// TextDoc
 
 /**
  * 段落の選択を更新する
  */
-void TextPara::UpdateSelection() {
+void TextDoc::UpdateSelection() {
     std::vector<TextPart>& parts = m_parts;
     INT iStart = m_selection_start;
     INT iEnd = m_selection_end;
@@ -123,29 +122,30 @@ void TextPara::UpdateSelection() {
 }
 
 /**
- * 段落をパースする。
+ * 段落を追加する。
  * @param text テキスト文字列。
- * @return ルビがあればtrue、さもなければfalse。
  */
-bool TextPara::ParseParts(const std::wstring& text) {
-    m_text = text;
-    m_parts.clear();
+void TextDoc::_AddPara(const std::wstring& text) {
+    size_t ich = m_text.size();
+    m_text += text;
 
-    size_t ich = 0;
+    TextPara para;
+    para.m_part_index_start = m_parts.size();
+
     bool has_ruby = false;
-    while (ich < text.length()) {
+    while (ich < m_text.length()) {
         // "{ベーステキスト(ルビテキスト)}"
-        if (text[ich] == L'{') {
-            intptr_t paren_start = text.find(L'(', ich);
-            if (paren_start != text.npos) {
-                intptr_t furigana_end = text.find(L")}", paren_start);
-                if (furigana_end != text.npos) {
+        if (m_text[ich] == L'{') {
+            intptr_t paren_start = m_text.find(L'(', ich);
+            if (paren_start != m_text.npos) {
+                intptr_t furigana_end = m_text.find(L")}", paren_start);
+                if (furigana_end != m_text.npos) {
                     TextPart part;
                     part.m_type = TextPart::RUBY;
                     part.m_start_index = ich;
                     part.m_end_index = furigana_end + 2;
 #ifndef NDEBUG // デバッグ時のみ
-                    part.m_text = text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
+                    part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
 #endif
                     part.m_base_index = ich + 1;
                     part.m_base_len = paren_start - (ich + 1);
@@ -161,21 +161,21 @@ bool TextPara::ParseParts(const std::wstring& text) {
 
         // "漢字(ふりがな)"
         size_t ich0 = ich; // 漢字の始まり？
-        size_t kanji_len = skip_kanji_chars(text, ich);
+        size_t kanji_len = skip_kanji_chars(m_text, ich);
         if (kanji_len > 0) {
-            if (ich < text.length() && text[ich] == L'(') { // 漢字の次に半角の丸カッコがある？
+            if (ich < m_text.length() && m_text[ich] == L'(') { // 漢字の次に半角の丸カッコがある？
                 ++ich;
                 size_t ich1 = ich; // フリガナの始まり？
-                size_t kana_len = skip_kana_chars(text, ich);
+                size_t kana_len = skip_kana_chars(m_text, ich);
                 if (kana_len > 0) { // 丸カッコの後にカナがある？
                     size_t ich2 = ich; // フリガナの終わり？
-                    if (ich2 < text.length() && text[ich2] == L')') { // フリガナの次に「丸カッコ閉じる」がある？
+                    if (ich2 < m_text.length() && m_text[ich2] == L')') { // フリガナの次に「丸カッコ閉じる」がある？
                         TextPart part;
                         part.m_type = TextPart::RUBY;
                         part.m_start_index = ich0;
                         part.m_end_index = ich2 + 1;
 #ifndef NDEBUG // デバッグ時のみ
-                        part.m_text = text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
+                        part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
 #endif
                         part.m_base_index = ich0;
                         part.m_base_len = (ich1 - 1) - ich0;
@@ -192,13 +192,13 @@ bool TextPara::ParseParts(const std::wstring& text) {
         }
 
         size_t char_index = ich;
-        size_t char_len = skip_one_real_char(text, ich);
+        size_t char_len = skip_one_real_char(m_text, ich);
         TextPart part;
         part.m_type = TextPart::NORMAL;
         part.m_start_index = char_index;
         part.m_end_index = ich;
 #ifndef NDEBUG // デバッグ時のみ
-        part.m_text = text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
+        part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
 #endif
         part.m_base_index = char_index;
         part.m_base_len = char_len;
@@ -207,7 +207,65 @@ bool TextPara::ParseParts(const std::wstring& text) {
         m_parts.push_back(part);
     }
 
-    return has_ruby;
+    para.m_part_index_end = m_parts.size();
+    m_paras.push_back(para);
+}
+
+/**
+ * テキストを分割する。
+ * @param container コンテナ。
+ * @param str テキスト文字列。
+ * @param chars 分割の区切り文字の集合。
+ */
+template <typename T_STR_CONTAINER>
+inline void
+mstr_split(T_STR_CONTAINER& container,
+           const typename T_STR_CONTAINER::value_type& str,
+           const typename T_STR_CONTAINER::value_type& chars)
+{
+    container.clear();
+    size_t i = 0, k = str.find_first_of(chars);
+    while (k != T_STR_CONTAINER::value_type::npos)
+    {
+        container.push_back(str.substr(i, k - i));
+        i = k + 1;
+        k = str.find_first_of(chars, i);
+    }
+    container.push_back(str.substr(i));
+}
+
+/**
+ * テキストを追加する。
+ * @param text テキスト文字列。
+ */
+void TextDoc::AddText(const std::wstring& text) {
+    // 改行文字で分割
+    std::vector<std::wstring> lines;
+    mstr_split(lines, text, std::wstring(L"\n"));
+
+    for (size_t iLine = 0; iLine < lines.size(); ++iLine) {
+        std::wstring line = lines[iLine];
+        size_t ich = m_text.size() + line.size();
+        // 段落を追加
+        _AddPara(line);
+
+        if (iLine + 1 != lines.size()) {
+            // 段落に含まれない改行文字を追加
+            TextPart part;
+            part.m_type = TextPart::NORMAL;
+            part.m_start_index = ich;
+            part.m_end_index = ich + 1;
+#ifndef NDEBUG // デバッグ時のみ
+            part.m_text = L"\n";
+#endif
+            part.m_base_index = ich;
+            part.m_base_len = 1;
+            part.m_ruby_index = 0;
+            part.m_ruby_len = 0;
+            m_parts.push_back(part);
+            m_text += L"\n";
+        }
+    }
 }
 
 /**
@@ -215,7 +273,7 @@ bool TextPara::ParseParts(const std::wstring& text) {
  * @param hBaseFont ベーステキストのフォント。
  * @param hRubyFont ルビテキストのフォント。
  */
-void TextPara::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
+void TextDoc::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
     HGDIOBJ hFontOld = SelectObject(m_dc, hBaseFont);
     TEXTMETRICW tm;
     GetTextMetricsW(m_dc, &tm);
@@ -231,7 +289,7 @@ void TextPara::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
  * @param hBaseFont ベーステキストのフォント。
  * @param hRubyFont ルビテキストのフォント。
  */
-void TextPara::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
+void TextDoc::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
     for (size_t iPart = 0; iPart < m_parts.size(); ++iPart) {
         TextPart& part = m_parts[iPart];
         part.UpdateWidth(*this, hBaseFont, hRubyFont);
@@ -244,8 +302,9 @@ void TextPara::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
  * @param y Y座標。
  * @return パートのインデックス。
  */
-INT TextPara::HitTest(INT x, INT y) const {
-    if (m_runs.empty()) return 0;
+INT TextDoc::HitTest(INT x, INT y) const {
+    if (m_runs.empty())
+        return 0;
 
     // 垂直方向
     INT current_y = 0;
@@ -280,12 +339,12 @@ INT TextPara::HitTest(INT x, INT y) const {
 }
 
 /**
- * ランを入植する。
+ * 0個以上のランをする。
  * @param hBaseFont ベーステキストのフォント。
  * @param hRubyFont ルビテキストのフォント。
  * @return 入植したランの個数。
  */
-INT TextPara::PopulateRuns(HFONT hBaseFont, HFONT hRubyFont) {
+INT TextDoc::_UpdateRuns(HFONT hBaseFont, HFONT hRubyFont) {
     m_runs.clear();
 
     // パーツの寸法を計算する
@@ -301,7 +360,7 @@ INT TextPara::PopulateRuns(HFONT hBaseFont, HFONT hRubyFont) {
 
         // 最大幅を超えたら、折り返し。
         // TODO: 禁則処理
-        if (m_max_width > 0 && current_x + part_width > m_max_width && current_x != 0) {
+        if (part.m_text == L"\n" || (m_max_width > 0 && current_x + part_width > m_max_width && current_x != 0)) {
             // ランを追加
             TextRun run;
             run.m_part_index_start = iPart0;
@@ -309,7 +368,7 @@ INT TextPara::PopulateRuns(HFONT hBaseFont, HFONT hRubyFont) {
             run.m_run_width = run_width;
             m_runs.push_back(run);
 
-            iPart0 = iPart;
+            iPart0 = iPart + (part.m_text == L"\n");
             current_x = run_width = 0;
         }
 
@@ -344,7 +403,7 @@ INT TextPara::PopulateRuns(HFONT hBaseFont, HFONT hRubyFont) {
  * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
  */
-void TextPara::_DrawRun(
+void TextDoc::_DrawRun(
     HDC dc,
     TextRun& run,
     LPRECT prc,
@@ -460,14 +519,14 @@ void TextPara::_DrawRun(
 }
 
 /**
- * 1個の段落を描画する。
+ * 文書を描画する。
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
  * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
  * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
  */
-void TextPara::DrawPara(
+void TextDoc::DrawDoc(
     HDC dc,
     LPRECT prc,
     HFONT hBaseFont,
@@ -476,7 +535,7 @@ void TextPara::DrawPara(
 {
     m_max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
 
-    PopulateRuns(hBaseFont, hRubyFont);
+    _UpdateRuns(hBaseFont, hRubyFont);
 
     INT current_y = prc->top;
     INT max_run_width = 0;
@@ -504,4 +563,14 @@ void TextPara::DrawPara(
     }
 
     m_para_width = max_run_width;
+}
+
+/**
+ * 文書をクリアする。
+ */
+void TextDoc::Clear() {
+    m_text.clear();
+    m_parts.clear();
+    m_runs.clear();
+    m_paras.clear();
 }

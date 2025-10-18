@@ -72,7 +72,7 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
 INT FuriganaCtl::HitTest(INT x, INT y) {
     x -= pimpl()->m_margin_rect.left;
     y -= pimpl()->m_margin_rect.top;
-    return pimpl()->m_para.HitTest(x, y);
+    return pimpl()->m_doc.HitTest(x, y);
 }
 
 void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
@@ -81,9 +81,9 @@ void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT
 
     SetCapture(hwnd);
 
-    TextPara& para = pimpl()->m_para;
+    TextDoc& doc = pimpl()->m_doc;
     INT iPart = HitTest(x, y);
-    para.m_selection_start = para.m_selection_end = iPart;
+    doc.m_selection_start = doc.m_selection_end = iPart;
     invalidate();
 }
 
@@ -91,8 +91,8 @@ void FuriganaCtl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
     if (GetCapture() != hwnd)
         return;
     INT iPart = HitTest(x, y);
-    TextPara& para = pimpl()->m_para;
-    para.m_selection_end = iPart;
+    TextDoc& doc = pimpl()->m_doc;
+    doc.m_selection_end = iPart;
 
     invalidate();
 }
@@ -102,8 +102,8 @@ void FuriganaCtl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
         return;
 
     INT iPart = HitTest(x, y);
-    TextPara& para = pimpl()->m_para;
-    para.m_selection_end = iPart;
+    TextDoc& doc = pimpl()->m_doc;
+    doc.m_selection_end = iPart;
 
     ReleaseCapture();
     invalidate();
@@ -148,13 +148,15 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     if (style & ES_CENTER) flags |= DT_CENTER;
     if (style & ES_RIGHT) flags |= DT_RIGHT;
 
-    TextPara& para = pimpl()->m_para;
-    para.UpdateSelection();
-    para.DrawPara(dc, &rc, pimpl()->m_font, pimpl()->m_sub_font, flags);
+    TextDoc& doc = pimpl()->m_doc;
+    doc.UpdateSelection();
+    doc.DrawDoc(dc, &rc, pimpl()->m_font, pimpl()->m_sub_font, flags);
 }
 
 void FuriganaCtl::invalidate() {
-    pimpl()->m_para.ParseParts(pimpl()->m_text);
+    TextDoc& doc = pimpl()->m_doc;
+    doc.Clear();
+    doc.AddText(pimpl()->m_text);
     BaseTextBox::invalidate();
 }
 

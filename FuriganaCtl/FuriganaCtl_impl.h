@@ -12,7 +12,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     INT m_ruby_ratio_mul; // ルビ比率の分子
     INT m_ruby_ratio_div; // ルビ比率の分母
     RECT m_margin_rect;
-    TextPara m_para;
+    TextDoc m_doc;
 
     FuriganaCtl_impl(HWND hwnd, BaseTextBox *self) : BaseTextBox_impl(hwnd, self) {
         m_sub_font = NULL;

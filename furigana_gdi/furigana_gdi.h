@@ -11,7 +11,7 @@
 #include <vector>
 #include "pstdint.h"
 
-struct TextPara;
+struct TextDoc;
 
 /////////////////////////////////////////////////////////////////////////////
 // TextPart - テキスト パート
@@ -47,7 +47,7 @@ struct TextPart {
         m_selected = false;
     }
 
-    void UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
+    void UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont);
 };
 
 
@@ -76,25 +76,31 @@ struct TextRun {
         m_has_ruby = false;
     }
 
-    void UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
-    void UpdateHeight(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
-
-    size_t Draw(
-        HDC dc,
-        TextPara& para,
-        LPRECT prc,
-        HFONT hBaseFont,
-        HFONT hRubyFont,
-        UINT flags);
+    void UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont);
+    void UpdateHeight(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont);
 };
 
 /////////////////////////////////////////////////////////////////////////////
 // TextPara - テキストの段落
 
 struct TextPara {
+    INT m_part_index_start;
+    INT m_part_index_end;
+
+    TextPara() {
+        m_part_index_start = 0;
+        m_part_index_end = 0;
+    }
+};
+
+/////////////////////////////////////////////////////////////////////////////
+// TextDoc - テキスト文書
+
+struct TextDoc {
     std::wstring m_text;
     std::vector<TextPart> m_parts;
     std::vector<TextRun> m_runs;
+    std::vector<TextPara> m_paras;
     HDC m_dc;
     INT m_base_height;
     INT m_ruby_height;
@@ -105,7 +111,7 @@ struct TextPara {
     INT m_max_width;
     INT m_line_gap;
 
-    TextPara() {
+    TextDoc() {
         m_dc = CreateCompatibleDC(NULL);
         m_base_height = 0;
         m_ruby_height = 0;
@@ -116,19 +122,19 @@ struct TextPara {
         m_max_width = 0;
         m_line_gap = 2;
     }
-    ~TextPara() {
+    ~TextDoc() {
         DeleteDC(m_dc);
     }
 
-    bool ParseParts(const std::wstring& text);
-    INT PopulateRuns(HFONT hBaseFont, HFONT hRubyFont);
+    void AddText(const std::wstring& text);
+    void Clear();
     void UpdateSelection();
 
     INT HitTest(INT x, INT y) const;
 
     void Update(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
 
-    void DrawPara(
+    void DrawDoc(
         HDC dc,
         LPRECT prc,
         HFONT hBaseFont,
@@ -138,6 +144,7 @@ struct TextPara {
 protected:
     void _UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont);
     void _UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont);
+    INT _UpdateRuns(HFONT hBaseFont, HFONT hRubyFont);
 
     void _DrawRun(
         HDC dc,
@@ -146,6 +153,7 @@ protected:
         HFONT hBaseFont,
         HFONT hRubyFont,
         UINT flags);
+    void _AddPara(const std::wstring& text);
 };
 
 /////////////////////////////////////////////////////////////////////////////
