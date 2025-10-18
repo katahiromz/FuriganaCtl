@@ -252,7 +252,7 @@ INT TextPara::HitTest(INT x, INT y) const {
     size_t iRun;
     for (iRun = 0; iRun < m_runs.size(); ++iRun) {
         const TextRun& run = m_runs[iRun];
-        if (y < current_y + run.m_run_height / 2)
+        if (y < current_y + run.m_run_height)
             break;
 
         current_y += run.m_run_height;
