@@ -100,8 +100,10 @@ struct TextPara {
     INT m_ruby_height;
     INT m_selection_start;
     INT m_selection_end;
+    INT m_para_width;
     INT m_para_height;
     INT m_max_width;
+    INT m_line_gap;
 
     TextPara() {
         m_dc = CreateCompatibleDC(NULL);
@@ -109,8 +111,10 @@ struct TextPara {
         m_ruby_height = 0;
         m_selection_start = -1;
         m_selection_end = -1;
+        m_para_width = 0;
         m_para_height = 0;
         m_max_width = 0;
+        m_line_gap = 2;
     }
     ~TextPara() {
         DeleteDC(m_dc);

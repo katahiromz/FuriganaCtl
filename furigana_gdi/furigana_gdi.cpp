@@ -479,7 +479,11 @@ void TextPara::DrawPara(
     PopulateRuns(hBaseFont, hRubyFont);
 
     INT current_y = prc->top;
+    INT max_run_width = 0;
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
+        if (iRun > 0)
+            current_y += m_line_gap;
+
         TextRun& run = m_runs[iRun];
 
         RECT rc = *prc;
@@ -488,6 +492,16 @@ void TextPara::DrawPara(
         if (dc && RectVisible(dc, &rc))
             _DrawRun(dc, run, &rc, hBaseFont, hRubyFont, flags);
 
+        if (max_run_width < run.m_run_width)
+            max_run_width = run.m_run_width;
+
         current_y += run.m_run_height;
     }
+
+    if (!dc) {
+        prc->right = prc->left + max_run_width;
+        prc->bottom = prc->top + current_y;
+    }
+
+    m_para_width = max_run_width;
 }
