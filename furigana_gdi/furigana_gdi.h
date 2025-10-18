@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// furigana_gdi.h
+/////////////////////////////////////////////////////////////////////////////
+
+#pragma once
 
 #ifndef _INC_WINDOWS
     #include <windows.h>
@@ -8,7 +11,11 @@
 #include <vector>
 #include "pstdint.h"
 
-// テキストの要素を表す構造体
+struct TextPara;
+
+/////////////////////////////////////////////////////////////////////////////
+// TextPart - テキスト パート
+
 struct TextPart {
     enum Type {
         NORMAL, // 通常テキスト
@@ -39,14 +46,17 @@ struct TextPart {
         m_part_width = -1;
         m_selected = false;
     }
+
+    void UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
 };
 
-// テキストの連続
+
+/////////////////////////////////////////////////////////////////////////////
+// TextRun - テキストの連続
+
 struct TextRun {
-    std::wstring m_text;
-    std::vector<TextPart> m_parts;
-    INT m_selection_start;
-    INT m_selection_end;
+    INT m_part_index_start;
+    INT m_part_index_end;
     INT m_base_height;
     INT m_ruby_height;
     INT m_run_width;
@@ -56,29 +66,82 @@ struct TextRun {
     bool m_has_ruby;
 
     TextRun() {
-        m_delta_x = 0;
-        m_selection_start = -1;
-        m_selection_end = -1;
+        m_part_index_start = 0;
+        m_part_index_end = 0;
         m_base_height = 0;
         m_ruby_height = 0;
+        m_run_width = 0;
+        m_run_height = 0;
+        m_delta_x = 0;
         m_has_ruby = false;
     }
+
+    void UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
+    void UpdateHeight(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
+
+    size_t Draw(
+        HDC dc,
+        TextPara& para,
+        LPRECT prc,
+        HFONT hBaseFont,
+        HFONT hRubyFont,
+        UINT flags);
 };
 
-// テキストの段落
-struct TextParagraph {
-    std::vector<TextPart> m_runs;
+/////////////////////////////////////////////////////////////////////////////
+// TextPara - テキストの段落
+
+struct TextPara {
+    std::wstring m_text;
+    std::vector<TextPart> m_parts;
+    std::vector<TextRun> m_runs;
+    HDC m_dc;
+    INT m_base_height;
+    INT m_ruby_height;
+    INT m_selection_start;
+    INT m_selection_end;
+    INT m_para_height;
+    INT m_max_width;
+
+    TextPara() {
+        m_dc = CreateCompatibleDC(NULL);
+        m_base_height = 0;
+        m_ruby_height = 0;
+        m_selection_start = -1;
+        m_selection_end = -1;
+        m_para_height = 0;
+        m_max_width = 0;
+    }
+    ~TextPara() {
+        DeleteDC(m_dc);
+    }
+
+    bool ParseParts(const std::wstring& text);
+    INT PopulateRuns(HFONT hBaseFont, HFONT hRubyFont);
+    void UpdateSelection();
+
+    INT HitTest(INT x, INT y) const;
+
+    void Update(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
+
+    void DrawPara(
+        HDC dc,
+        LPRECT prc,
+        HFONT hBaseFont,
+        HFONT hRubyFont,
+        UINT flags);
+
+protected:
+    void _UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont);
+    void _UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont);
+
+    void _DrawRun(
+        HDC dc,
+        TextRun& run,
+        LPRECT prc,
+        HFONT hBaseFont,
+        HFONT hRubyFont,
+        UINT flags);
 };
 
-void UpdateTextRunSelection(TextRun& run);
-INT HitTestTextRun(const TextRun& run, INT x, INT y);
-
-bool ParseTextRun(TextRun& run, const std::wstring& text);
-
-size_t DrawTextRun(
-    HDC dc,
-    TextRun& run,
-    LPRECT prc,
-    HFONT hBaseFont,
-    HFONT hRubyFont,
-    UINT flags);
+/////////////////////////////////////////////////////////////////////////////

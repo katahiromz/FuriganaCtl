@@ -72,7 +72,7 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
 INT FuriganaCtl::HitTest(INT x, INT y) {
     x -= pimpl()->m_margin_rect.left;
     y -= pimpl()->m_margin_rect.top;
-    return HitTestTextRun(pimpl()->m_run, x, y);
+    return pimpl()->m_para.HitTest(x, y);
 }
 
 void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
@@ -81,9 +81,9 @@ void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT
 
     SetCapture(hwnd);
 
+    TextPara& para = pimpl()->m_para;
     INT iPart = HitTest(x, y);
-    TextRun& run = pimpl()->m_run;
-    run.m_selection_start = run.m_selection_end = iPart;
+    para.m_selection_start = para.m_selection_end = iPart;
     invalidate();
 }
 
@@ -91,8 +91,8 @@ void FuriganaCtl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
     if (GetCapture() != hwnd)
         return;
     INT iPart = HitTest(x, y);
-    TextRun& run = pimpl()->m_run;
-    run.m_selection_end = iPart;
+    TextPara& para = pimpl()->m_para;
+    para.m_selection_end = iPart;
 
     invalidate();
 }
@@ -102,8 +102,8 @@ void FuriganaCtl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
         return;
 
     INT iPart = HitTest(x, y);
-    TextRun& run = pimpl()->m_run;
-    run.m_selection_end = iPart;
+    TextPara& para = pimpl()->m_para;
+    para.m_selection_end = iPart;
 
     ReleaseCapture();
     invalidate();
@@ -126,6 +126,7 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }
+
     return 0;
 }
 
@@ -133,10 +134,12 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     FillRect(dc, client_rc, GetSysColorBrush(COLOR_WINDOW));
 
     const RECT& margin_rect = pimpl()->m_margin_rect;
-    client_rc->left += margin_rect.left;
-    client_rc->top += margin_rect.top;
-    client_rc->right -= margin_rect.right;
-    client_rc->bottom -= margin_rect.bottom;
+    RECT rc = *client_rc;
+    rc.left += margin_rect.left;
+    rc.top += margin_rect.top;
+    rc.right -= margin_rect.right;
+    rc.bottom -= margin_rect.bottom;
+    IntersectClipRect(dc, rc.left, rc.top, rc.right, rc.bottom);
 
     DWORD style = GetWindowLongPtrW(hwnd, GWL_STYLE);
 
@@ -145,19 +148,13 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     if (style & ES_CENTER) flags |= DT_CENTER;
     if (style & ES_RIGHT) flags |= DT_RIGHT;
 
-    UpdateTextRunSelection(pimpl()->m_run);
-
-    DrawTextRun(
-        dc,
-        pimpl()->m_run,
-        client_rc,
-        pimpl()->m_font,
-        pimpl()->m_sub_font,
-        flags);
+    TextPara& para = pimpl()->m_para;
+    para.UpdateSelection();
+    para.DrawPara(dc, &rc, pimpl()->m_font, pimpl()->m_sub_font, flags);
 }
 
 void FuriganaCtl::invalidate() {
-    ParseTextRun(pimpl()->m_run, pimpl()->m_text);
+    pimpl()->m_para.ParseParts(pimpl()->m_text);
     BaseTextBox::invalidate();
 }
 

@@ -1,4 +1,7 @@
-﻿#include "furigana_gdi.h"
+﻿// furigana_gdi.cpp
+/////////////////////////////////////////////////////////////////////////////
+
+#include "furigana_gdi.h"
 #include "char_judge.h"
 #include <assert.h>
 
@@ -6,18 +9,76 @@
 #undef max
 
 // テキストの幅を計測する
-INT get_text_width(HDC dc, LPCWSTR text, INT len) {
+static INT get_text_width(HDC dc, LPCWSTR text, INT len) {
     if (len <= 0) return 0;
     SIZE size = {0};
     GetTextExtentPoint32W(dc, text, len, &size);
     return size.cx;
 }
 
-// テキストランの選択を更新する
-void UpdateTextRunSelection(TextRun& run) {
-    std::vector<TextPart>& parts = run.m_parts;
-    INT iStart = run.m_selection_start;
-    INT iEnd = run.m_selection_end;
+/////////////////////////////////////////////////////////////////////////////
+// TextPart
+
+void TextPart::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
+    // 幅の計測
+    HDC dc = para.m_dc;
+    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
+    std::wstring& text = para.m_text;
+    if (m_type == TextPart::NORMAL) {
+        m_base_width = get_text_width(dc, &text[m_base_index], m_base_len);
+        m_part_width = m_base_width;
+        m_ruby_width = 0;
+    } else { // TextPart::RUBY
+        m_base_width = get_text_width(dc, &text[m_base_index], m_base_len);
+        SelectObject(dc, hRubyFont);
+        m_ruby_width = get_text_width(dc, &text[m_ruby_index], m_ruby_len);
+        // ルビブロックの幅は、ベースとルビの幅の大きい方
+        m_part_width = std::max(m_base_width, m_ruby_width);
+    }
+    SelectObject(dc, hFontOld);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// TextRun
+
+void TextRun::UpdateHeight(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
+    // ルビがあるか？
+    for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
+        assert(0 <= iPart && iPart < (INT)para.m_parts.size());
+        TextPart& part = para.m_parts[iPart];
+        if (part.m_type == TextPart::RUBY && part.m_ruby_len > 0) {
+            m_has_ruby = true;
+        }
+    }
+
+    m_base_height = para.m_base_height;
+    if (m_has_ruby) {
+        m_ruby_height = para.m_ruby_height;
+        m_run_height = m_ruby_height + m_base_height;
+    } else {
+        m_ruby_height = 0;
+        m_run_height = m_base_height;
+    }
+}
+
+void TextRun::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
+    std::vector<TextPart>& parts = para.m_parts;
+    m_run_width = 0;
+    for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
+        TextPart& part = parts[iPart];
+        part.UpdateWidth(para, hBaseFont, hRubyFont);
+        m_run_width += part.m_part_width;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// TextPara
+
+// 段落の選択を更新する
+void TextPara::UpdateSelection() {
+    std::vector<TextPart>& parts = m_parts;
+    INT iStart = m_selection_start;
+    INT iEnd = m_selection_end;
     if (iStart == -1) {
         for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
             parts[iPart].m_selected = false;
@@ -35,11 +96,10 @@ void UpdateTextRunSelection(TextRun& run) {
     }
 }
 
-// テキストランをパースする
-bool ParseTextRun(TextRun& run, const std::wstring& text) {
-    run.m_text = text;
-    std::vector<TextPart>& parts = run.m_parts;
-    parts.clear();
+// 段落をパースする
+bool TextPara::ParseParts(const std::wstring& text) {
+    m_text = text;
+    m_parts.clear();
 
     size_t ich = 0;
     bool has_ruby = false;
@@ -61,7 +121,7 @@ bool ParseTextRun(TextRun& run, const std::wstring& text) {
                     part.m_base_len = paren_start - (ich + 1);
                     part.m_ruby_index = paren_start + 1;
                     part.m_ruby_len = furigana_end - (paren_start + 1);
-                    parts.push_back(part);
+                    m_parts.push_back(part);
                     ich = furigana_end + 2;
                     has_ruby = true;
                     continue;
@@ -91,7 +151,7 @@ bool ParseTextRun(TextRun& run, const std::wstring& text) {
                         part.m_base_len = (ich1 - 1) - ich0;
                         part.m_ruby_index = ich1;
                         part.m_ruby_len = ich2 - ich1;
-                        parts.push_back(part);
+                        m_parts.push_back(part);
                         ich = ich2 + 1;
                         has_ruby = true;
                         continue;
@@ -114,129 +174,118 @@ bool ParseTextRun(TextRun& run, const std::wstring& text) {
         part.m_base_len = char_len;
         part.m_ruby_index = 0;
         part.m_ruby_len = 0;
-        parts.push_back(part);
+        m_parts.push_back(part);
     }
+
     return has_ruby;
 }
 
-void
-UpdateTextRunHeight(
-    HDC dc,
-    TextRun& run,
-    HFONT hBaseFont,
-    HFONT hRubyFont)
-{
-    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
-
-    TEXTMETRICW tm_base;
-    GetTextMetricsW(dc, &tm_base);
-    run.m_base_height = tm_base.tmHeight;
-
-    if (run.m_has_ruby) {
-        SelectObject(dc, hRubyFont);
-        TEXTMETRICW tm_ruby;
-        GetTextMetricsW(dc, &tm_ruby);
-        run.m_ruby_height = tm_ruby.tmHeight;
-
-        // ルビ付き行の高さ: ルビの高さ + ベースの高さ
-        run.m_run_height = run.m_ruby_height + run.m_base_height;
-    } else {
-        run.m_ruby_height = 0;
-        run.m_run_height = run.m_base_height;
-    }
-
-    SelectObject(dc, hFontOld);
+void TextPara::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
+    HGDIOBJ hFontOld = SelectObject(m_dc, hBaseFont);
+    TEXTMETRICW tm;
+    GetTextMetricsW(m_dc, &tm);
+    m_base_height = tm.tmHeight; // ベーステキストのフォントの高さ
+    SelectObject(m_dc, hRubyFont);
+    GetTextMetricsW(m_dc, &tm);
+    m_ruby_height = tm.tmHeight; // ルビテキストのフォントの高さ
+    SelectObject(m_dc, hFontOld);
 }
 
-void
-UpdateTextPartWidth(
-    const std::wstring& text,
-    TextPart& part,
-    HDC dc,
-    HFONT hBaseFont,
-    HFONT hRubyFont)
-{
-    // 幅の計測
-    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
-    if (part.m_type == TextPart::NORMAL) {
-        part.m_base_width = get_text_width(dc, &text[part.m_base_index], part.m_base_len);
-        part.m_part_width = part.m_base_width;
-        part.m_ruby_width = 0;
-    } else { // TextPart::RUBY
-        part.m_base_width = get_text_width(dc, &text[part.m_base_index], part.m_base_len);
-        SelectObject(dc, hRubyFont);
-        part.m_ruby_width = get_text_width(dc, &text[part.m_ruby_index], part.m_ruby_len);
-        // ルビブロックの幅は、ベースとルビの幅の大きい方
-        part.m_part_width = std::max(part.m_base_width, part.m_ruby_width);
+void TextPara::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
+    for (size_t iPart = 0; iPart < m_parts.size(); ++iPart) {
+        TextPart& part = m_parts[iPart];
+        part.UpdateWidth(*this, hBaseFont, hRubyFont);
     }
-    SelectObject(dc, hFontOld);
 }
 
-size_t
-UpdateTextRunWidth(HDC dc, TextRun& run, HFONT hBaseFont, HFONT hRubyFont) {
-    INT x_extent = 0;
-    INT max_width = run.m_max_width;
+// 段落の当たり判定
+INT TextPara::HitTest(INT x, INT y) const {
+    if (m_runs.empty()) return 0;
 
-    std::vector<TextPart>& parts = run.m_parts;
-    size_t iPart;
-    for (iPart = 0; iPart < parts.size(); ++iPart) {
-        TextPart& part = run.m_parts[iPart];
+    // 垂直方向
+    INT current_y = 0;
+    size_t iRun;
+    for (iRun = 0; iRun < m_runs.size(); ++iRun) {
+        const TextRun& run = m_runs[iRun];
+        if (y < current_y + run.m_run_height / 2)
+            break;
 
-        // パートを計算
-        UpdateTextPartWidth(run.m_text, part, dc, hBaseFont, hRubyFont);
+        current_y += run.m_run_height;
+    }
+
+    if (iRun < m_runs.size()) {
+        const TextRun& run = m_runs[iRun];
+        INT iPart = run.m_part_index_start;
+        x -= run.m_delta_x; // 右そろえ、中央そろえの修正分
+
+        // 水平方向
+        INT current_x = 0;
+        for (; iPart < run.m_part_index_end; ++iPart) {
+            const TextPart& part = m_parts[iPart];
+            current_x += part.m_part_width;
+            if (x < current_x - part.m_part_width / 2)
+                return (INT)iPart;
+        }
+
+        return (INT)run.m_part_index_end;
+    }
+
+    return m_runs.back().m_part_index_end;
+}
+
+// ランを入植する。
+INT TextPara::PopulateRuns(HFONT hBaseFont, HFONT hRubyFont) {
+    m_runs.clear();
+
+    // パーツの寸法を計算する
+    _UpdatePartsHeight(hBaseFont, hRubyFont);
+    _UpdatePartsWidth(hBaseFont, hRubyFont);
+
+    // 折り返し処理を行ってランを追加していく。ついでに各ランの幅を計算する
+    size_t iPart, iPart0 = 0, iRun = 0;
+    INT current_x = 0, run_width = 0;
+    for (iPart = 0; iPart < m_parts.size(); ++iPart) {
+        TextPart& part = m_parts[iPart];
+        INT part_width = part.m_part_width;
 
         // 最大幅を超えたら、折り返し。
         // TODO: 禁則処理
-        if (max_width > 0 && x_extent + part.m_part_width > max_width && x_extent != 0) {
-            break;
+        if (m_max_width > 0 && current_x + part_width > m_max_width && current_x != 0) {
+            // ランを追加
+            TextRun run;
+            run.m_part_index_start = iPart0;
+            run.m_part_index_end = iPart;
+            run.m_run_width = run_width;
+            m_runs.push_back(run);
+
+            iPart0 = iPart;
+            current_x = run_width = 0;
         }
 
-        x_extent += part.m_part_width;
+        current_x += part_width;
+        run_width += part_width;
     }
 
-    run.m_run_width = x_extent;
-    return iPart;
-}
+    // 折り返しの残りのパーツのランを追加
+    TextRun run;
+    run.m_part_index_start = iPart0;
+    run.m_part_index_end = iPart;
+    run.m_run_width = run_width;
+    m_runs.push_back(run);
 
-// テキストランの当たり判定
-INT HitTestTextRun(const TextRun& run, INT x, INT y) {
-    const std::vector<TextPart>& parts = run.m_parts;
-
-    x -= run.m_delta_x; // 右そろえ、中央そろえの修正分
-
-    INT current_x = 0;
-    for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-        const TextPart& part = parts[iPart];
-        current_x += part.m_part_width;
-        if (x < current_x - part.m_part_width / 2)
-            return (INT)iPart;
-    }
-    return (INT)parts.size();
-}
-
-size_t
-GetTextRunMetric(
-    TextRun& run,
-    HFONT hBaseFont,
-    HFONT hRubyFont)
-{
-    // ルビがあるか？
-    std::vector<TextPart>& parts = run.m_parts;
-    for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-        TextPart& part = run.m_parts[iPart];
-        if (part.m_type == TextPart::RUBY && part.m_ruby_len > 0) {
-            run.m_has_ruby = true;
-        }
+    // 各ランの高さを計算する
+    m_para_height = 0;
+    for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
+        TextRun& run = m_runs[iRun];
+        run.UpdateHeight(*this, hBaseFont, hRubyFont);
+        m_para_height += run.m_run_height;
     }
 
-    // 寸法を計算
-    HDC dc = CreateCompatibleDC(NULL);
-    UpdateTextRunHeight(dc, run, hBaseFont, hRubyFont);
-    size_t iPart_break = UpdateTextRunWidth(dc, run, hBaseFont, hRubyFont);
-    DeleteDC(dc);
-
-    return iPart_break;
+    return (INT)m_runs.size();
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Drawing
 
 /**
  * 一行のフリガナ付きテキストを描画する。
@@ -247,9 +296,8 @@ GetTextRunMetric(
  * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
  * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_NOCLIP。
- * @return 折り返しがない場合は std::wstring::npos。折り返しがある場合は、折り返し場所のパートのインデックス。
  */
-size_t DrawTextRun(
+void TextPara::_DrawRun(
     HDC dc,
     TextRun& run,
     LPRECT prc,
@@ -257,15 +305,12 @@ size_t DrawTextRun(
     HFONT hRubyFont,
     UINT flags)
 {
-    std::wstring& text = run.m_text;
-    std::vector<TextPart>& parts = run.m_parts;
-
-    if (text.length() <= 0 || parts.empty()) {
+    if (m_text.length() <= 0 || m_parts.empty()) {
         if (!dc) {
             prc->right = prc->left;
             prc->bottom = prc->top;
         }
-        return std::wstring::npos;
+        return;
     }
 
     // dcがNULLの場合、計測用に画面のHDCを使用する
@@ -276,7 +321,7 @@ size_t DrawTextRun(
             prc->right = prc->left;
             prc->bottom = prc->top;
         }
-        return std::wstring::npos;
+        return;
     }
 
     // 描画/計測の準備
@@ -287,14 +332,10 @@ size_t DrawTextRun(
     }
     if (dc) SetBkMode(dc, TRANSPARENT); // 背景モード設定
 
-    // メトリック情報を取得
-    run.m_max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
-    size_t iPart_break = GetTextRunMetric(run, hBaseFont, hRubyFont);
-
     if (flags & DT_CENTER)
-        run.m_delta_x = (run.m_max_width - run.m_run_width) / 2;
+        run.m_delta_x = (m_max_width - run.m_run_width) / 2;
     else if (flags & DT_RIGHT)
-        run.m_delta_x = run.m_max_width - run.m_run_width;
+        run.m_delta_x = m_max_width - run.m_run_width;
     else
         run.m_delta_x = 0;
 
@@ -307,14 +348,9 @@ size_t DrawTextRun(
     SelectObject(hdc, hFontOld);
 
     // パーツを順に処理し、計測または描画する
-    for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-        TextPart& part = parts[iPart];
-
-        if (iPart_break == iPart) // 折り返し判定
-            break;
-
-        // 必要なら再計算
-        UpdateTextPartWidth(text, part, dc, hBaseFont, hRubyFont);
+    for (INT iPart = run.m_part_index_start; iPart < run.m_part_index_end; ++iPart) {
+        assert(0 <= iPart && iPart < (INT)m_parts.size());
+        TextPart& part = m_parts[iPart];
 
         // 描画対象の長方形
         RECT rc = { current_x, prc->top, current_x + part.m_part_width, prc->top + run.m_run_height };
@@ -331,7 +367,7 @@ size_t DrawTextRun(
             if (part.m_type == TextPart::NORMAL) {
                 // 通常テキストの描画 (ベースラインに描画)
                 hFontOld = SelectObject(dc, hBaseFont);
-                ExtTextOutW(dc, current_x, base_y, 0, NULL, &text[part.m_base_index], part.m_base_len, NULL);
+                ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
                 SelectObject(dc, hFontOld);
             } else { // TextPart::RUBY
                 // ベーステキストの配置を決める
@@ -356,13 +392,13 @@ size_t DrawTextRun(
 
                 // ベーステキストの描画
                 hFontOld = SelectObject(dc, hBaseFont);
-                ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &text[part.m_base_index], part.m_base_len, NULL);
+                ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
                 SelectObject(dc, hFontOld);
 
                 // ルビテキストの描画
                 hFontOld = SelectObject(dc, hRubyFont);
                 INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-                ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &text[part.m_ruby_index], part.m_ruby_len, NULL);
+                ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
                 SetTextCharacterExtra(dc, old_extra_ruby);
                 SelectObject(dc, hFontOld);
             }
@@ -380,6 +416,29 @@ size_t DrawTextRun(
     // クリーンアップ
     if (dc && !(flags & DT_NOCLIP)) RestoreDC(hdc, saved_dc);
     if (!dc) DeleteDC(hdc);
+}
 
-    return iPart_break;
+void TextPara::DrawPara(
+    HDC dc,
+    LPRECT prc,
+    HFONT hBaseFont,
+    HFONT hRubyFont,
+    UINT flags)
+{
+    m_max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
+
+    PopulateRuns(hBaseFont, hRubyFont);
+
+    INT current_y = prc->top;
+    for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
+        TextRun& run = m_runs[iRun];
+
+        RECT rc = *prc;
+        rc.top = current_y;
+        rc.bottom = rc.top + run.m_run_height;
+        if (dc && RectVisible(dc, &rc))
+            _DrawRun(dc, run, &rc, hBaseFont, hRubyFont, flags);
+
+        current_y += run.m_run_height;
+    }
 }
