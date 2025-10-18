@@ -8,7 +8,13 @@
 #undef min
 #undef max
 
-// テキストの幅を計測する
+/**
+ * テキストの幅を計測する。
+ * @param dc 描画するときはデバイスコンテキスト。
+ * @param text テキスト。
+ * @param len テキストの長さ。
+ * @return テキストの幅。
+ */
 static INT get_text_width(HDC dc, LPCWSTR text, INT len) {
     if (len <= 0) return 0;
     SIZE size = {0};
@@ -17,8 +23,14 @@ static INT get_text_width(HDC dc, LPCWSTR text, INT len) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// TextPart
+// TextPart - テキストのパート。
 
+/**
+ * パートの幅を計測する。
+ * @param para 段落。
+ * @param hBaseFont ベーステキストのフォント。
+ * @param hRubyFont ルビテキストのフォント。
+ */
 void TextPart::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
     // 幅の計測
     HDC dc = para.m_dc;
@@ -39,8 +51,14 @@ void TextPart::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// TextRun
+// TextRun - テキストの連続(ラン)。
 
+/**
+ * ランの高さを計測する。
+ * @param para 段落。
+ * @param hBaseFont ベーステキストのフォント。
+ * @param hRubyFont ルビテキストのフォント。
+ */
 void TextRun::UpdateHeight(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
     // ルビがあるか？
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
@@ -61,6 +79,12 @@ void TextRun::UpdateHeight(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
     }
 }
 
+/**
+ * ランの幅を計測する。
+ * @param para 段落。
+ * @param hBaseFont ベーステキストのフォント。
+ * @param hRubyFont ルビテキストのフォント。
+ */
 void TextRun::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
     std::vector<TextPart>& parts = para.m_parts;
     m_run_width = 0;
@@ -74,7 +98,9 @@ void TextRun::UpdateWidth(TextPara& para, HFONT hBaseFont, HFONT hRubyFont) {
 /////////////////////////////////////////////////////////////////////////////
 // TextPara
 
-// 段落の選択を更新する
+/**
+ * 段落の選択を更新する
+ */
 void TextPara::UpdateSelection() {
     std::vector<TextPart>& parts = m_parts;
     INT iStart = m_selection_start;
@@ -96,7 +122,11 @@ void TextPara::UpdateSelection() {
     }
 }
 
-// 段落をパースする
+/**
+ * 段落をパースする。
+ * @param text テキスト文字列。
+ * @return ルビがあればtrue、さもなければfalse。
+ */
 bool TextPara::ParseParts(const std::wstring& text) {
     m_text = text;
     m_parts.clear();
@@ -180,6 +210,11 @@ bool TextPara::ParseParts(const std::wstring& text) {
     return has_ruby;
 }
 
+/**
+ * パーツの高さを計算する。
+ * @param hBaseFont ベーステキストのフォント。
+ * @param hRubyFont ルビテキストのフォント。
+ */
 void TextPara::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
     HGDIOBJ hFontOld = SelectObject(m_dc, hBaseFont);
     TEXTMETRICW tm;
@@ -191,6 +226,11 @@ void TextPara::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
     SelectObject(m_dc, hFontOld);
 }
 
+/**
+ * パーツの幅を計算する。
+ * @param hBaseFont ベーステキストのフォント。
+ * @param hRubyFont ルビテキストのフォント。
+ */
 void TextPara::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
     for (size_t iPart = 0; iPart < m_parts.size(); ++iPart) {
         TextPart& part = m_parts[iPart];
@@ -198,7 +238,12 @@ void TextPara::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
     }
 }
 
-// 段落の当たり判定
+/**
+ * 段落の当たり判定。
+ * @param x X座標。
+ * @param y Y座標。
+ * @return パートのインデックス。
+ */
 INT TextPara::HitTest(INT x, INT y) const {
     if (m_runs.empty()) return 0;
 
@@ -216,6 +261,7 @@ INT TextPara::HitTest(INT x, INT y) const {
     if (iRun < m_runs.size()) {
         const TextRun& run = m_runs[iRun];
         INT iPart = run.m_part_index_start;
+
         x -= run.m_delta_x; // 右そろえ、中央そろえの修正分
 
         // 水平方向
@@ -233,7 +279,12 @@ INT TextPara::HitTest(INT x, INT y) const {
     return m_runs.back().m_part_index_end;
 }
 
-// ランを入植する。
+/**
+ * ランを入植する。
+ * @param hBaseFont ベーステキストのフォント。
+ * @param hRubyFont ルビテキストのフォント。
+ * @return 入植したランの個数。
+ */
 INT TextPara::PopulateRuns(HFONT hBaseFont, HFONT hRubyFont) {
     m_runs.clear();
 
@@ -284,18 +335,14 @@ INT TextPara::PopulateRuns(HFONT hBaseFont, HFONT hRubyFont) {
     return (INT)m_runs.size();
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// Drawing
-
 /**
- * 一行のフリガナ付きテキストを描画する。
- *
+ * 1個のランを描画する。
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
- * @param text 描画したい、一行のルビ コンパウンド テキスト。
- * @param prc 描画する位置とサイズ。計測後はサイズが変更される。
+ * @param run 描画したいラン。
+ * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
  * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
  * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
- * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_NOCLIP。
+ * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
  */
 void TextPara::_DrawRun(
     HDC dc,
@@ -325,11 +372,6 @@ void TextPara::_DrawRun(
     }
 
     // 描画/計測の準備
-    INT saved_dc = 0;
-    if (dc && !(flags & DT_NOCLIP)) {
-        saved_dc = SaveDC(hdc);
-        IntersectClipRect(hdc, prc->left, prc->top, prc->right, prc->bottom);
-    }
     if (dc) SetBkMode(dc, TRANSPARENT); // 背景モード設定
 
     if (flags & DT_CENTER)
@@ -414,10 +456,17 @@ void TextPara::_DrawRun(
     }
 
     // クリーンアップ
-    if (dc && !(flags & DT_NOCLIP)) RestoreDC(hdc, saved_dc);
     if (!dc) DeleteDC(hdc);
 }
 
+/**
+ * 1個の段落を描画する。
+ * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
+ * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
+ * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
+ * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
+ * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
+ */
 void TextPara::DrawPara(
     HDC dc,
     LPRECT prc,
