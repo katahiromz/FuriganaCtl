@@ -19,7 +19,8 @@ struct TextDoc;
 struct TextPart {
     enum Type {
         NORMAL, // 通常テキスト
-        RUBY    // ルビブロック
+        RUBY,   // ルビブロック
+        NEWLINE // 改行文字
     } m_type;
 
 #ifndef NDEBUG // デバッグ時のみ

@@ -36,16 +36,24 @@ void TextPart::UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
     HDC dc = doc.m_dc;
     HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
     std::wstring& text = doc.m_text;
-    if (m_type == TextPart::NORMAL) {
+    switch (m_type) {
+    case TextPart::NORMAL:
         m_base_width = get_text_width(dc, &text[m_base_index], m_base_len);
         m_part_width = m_base_width;
         m_ruby_width = 0;
-    } else { // TextPart::RUBY
+        break;
+    case TextPart::RUBY:
         m_base_width = get_text_width(dc, &text[m_base_index], m_base_len);
         SelectObject(dc, hRubyFont);
         m_ruby_width = get_text_width(dc, &text[m_ruby_index], m_ruby_len);
         // ルビブロックの幅は、ベースとルビの幅の大きい方
         m_part_width = std::max(m_base_width, m_ruby_width);
+        break;
+    case TextPart::NEWLINE:
+        m_base_width = 0;
+        m_ruby_width = 0;
+        m_part_width = 0;
+        break;
     }
     SelectObject(dc, hFontOld);
 }
@@ -252,7 +260,7 @@ void TextDoc::AddText(const std::wstring& text) {
         if (iLine + 1 != lines.size()) {
             // 段落に含まれない改行文字を追加
             TextPart part;
-            part.m_type = TextPart::NORMAL;
+            part.m_type = TextPart::NEWLINE;
             part.m_start_index = ich;
             part.m_end_index = ich + 1;
 #ifndef NDEBUG // デバッグ時のみ
@@ -465,43 +473,50 @@ void TextDoc::_DrawRun(
         }
 
         if (dc && RectVisible(dc, &rc)) { // 描画すべきか？
-            if (part.m_type == TextPart::NORMAL) {
+            switch (part.m_type) {
+            case TextPart::NORMAL:
                 // 通常テキストの描画 (ベースラインに描画)
                 hFontOld = SelectObject(dc, hBaseFont);
                 ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
                 SelectObject(dc, hFontOld);
-            } else { // TextPart::RUBY
-                // ベーステキストの配置を決める
-                INT base_start_x = current_x;
-                if (part.m_part_width > part.m_base_width) {
-                    base_start_x += (part.m_part_width - part.m_base_width) / 2;
-                }
-
-                // ルビの配置を決める
-                INT ruby_extra, ruby_start_x = current_x;
-                if (part.m_part_width - part.m_ruby_width > gap_threshold) {
-                    // 両端ぞろえ
-                    // SetTextCharacterExtraで使用する文字間スペースを設定
-                    if (part.m_ruby_len > 1) {
-                        ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
+                break;
+            case TextPart::RUBY:
+                {
+                    // ベーステキストの配置を決める
+                    INT base_start_x = current_x;
+                    if (part.m_part_width > part.m_base_width) {
+                        base_start_x += (part.m_part_width - part.m_base_width) / 2;
                     }
-                } else {
-                    // パート内で中央ぞろえ
-                    ruby_start_x += (part.m_part_width - part.m_ruby_width) / 2;
-                    ruby_extra = 0;
+
+                    // ルビの配置を決める
+                    INT ruby_extra, ruby_start_x = current_x;
+                    if (part.m_part_width - part.m_ruby_width > gap_threshold) {
+                        // 両端ぞろえ
+                        // SetTextCharacterExtraで使用する文字間スペースを設定
+                        if (part.m_ruby_len > 1) {
+                            ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
+                        }
+                    } else {
+                        // パート内で中央ぞろえ
+                        ruby_start_x += (part.m_part_width - part.m_ruby_width) / 2;
+                        ruby_extra = 0;
+                    }
+
+                    // ベーステキストの描画
+                    hFontOld = SelectObject(dc, hBaseFont);
+                    ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
+                    SelectObject(dc, hFontOld);
+
+                    // ルビテキストの描画
+                    hFontOld = SelectObject(dc, hRubyFont);
+                    INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
+                    ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
+                    SetTextCharacterExtra(dc, old_extra_ruby);
+                    SelectObject(dc, hFontOld);
                 }
-
-                // ベーステキストの描画
-                hFontOld = SelectObject(dc, hBaseFont);
-                ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
-                SelectObject(dc, hFontOld);
-
-                // ルビテキストの描画
-                hFontOld = SelectObject(dc, hRubyFont);
-                INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-                ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
-                SetTextCharacterExtra(dc, old_extra_ruby);
-                SelectObject(dc, hFontOld);
+                break;
+            case TextPart::NEWLINE:
+                break;
             }
         }
 
