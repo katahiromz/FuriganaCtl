@@ -120,7 +120,7 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
     invalidate();
 }
 
-void BaseTextBox_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect, RECT *update_rect) {
+void BaseTextBox_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect) {
     HGDIOBJ old_font = NULL;
     if (m_font)
         old_font = ::SelectObject(dc, m_font);
@@ -148,7 +148,7 @@ void BaseTextBox_impl::paint_client(HWND hwnd, HDC hDC) {
     RECT client_rect;
     ::GetClientRect(hwnd, &client_rect);
 
-    paint_client_inner(hwnd, dc, &client_rect, hDC ? &client_rect : &ps.rcPaint);
+    paint_client_inner(hwnd, dc, &client_rect);
 
     if (!hDC)
         ::EndPaint(hwnd, &ps);

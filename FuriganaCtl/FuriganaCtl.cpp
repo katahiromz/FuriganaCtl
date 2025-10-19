@@ -469,7 +469,7 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
 void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_ALL;
-    GetScrollInfo(hwnd, SB_HORZ, &si);
+    ::GetScrollInfo(hwnd, SB_HORZ, &si);
 
     INT nPos = si.nPos;
     switch (code) {
@@ -502,7 +502,7 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     if (nPos != si.nPos) {
         si.fMask = SIF_POS;
         si.nPos = nPos;
-        SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+        ::SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
         m_scroll_x = nPos;
         invalidate();
     }
@@ -512,7 +512,7 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
 void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_ALL;
-    GetScrollInfo(hwnd, SB_VERT, &si);
+    ::GetScrollInfo(hwnd, SB_VERT, &si);
 
     INT nPos = si.nPos;
     switch (code) {
@@ -545,7 +545,7 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     if (nPos != si.nPos) {
         si.fMask = SIF_POS;
         si.nPos = nPos;
-        SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+        ::SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
         m_scroll_y = nPos;
         invalidate();
     }
@@ -569,18 +569,12 @@ void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     HBITMAP hbm = CreateCompatibleBitmap(dc, cx, cy);
     HGDIOBJ oldBmp = SelectObject(memDC, hbm);
 
-    // フォント設定
-    HGDIOBJ oldFont = NULL;
-    if (m_font) oldFont = SelectObject(memDC, m_font);
-
-    RECT rcDraw = ps.rcPaint;
-    paint_client_inner(hwnd, memDC, &rcClient, &rcDraw);
+    paint_client_inner(hwnd, memDC, &rcClient);
 
     // ビットブロットで画面へ転送
     BitBlt(dc, 0, 0, cx, cy, memDC, 0, 0, SRCCOPY);
 
     // 後片付け
-    if (m_font && oldFont) SelectObject(memDC, oldFont);
     SelectObject(memDC, oldBmp);
     DeleteObject(hbm);
     DeleteDC(memDC);
@@ -589,22 +583,28 @@ void FuriganaCtl_impl::OnPaint(HWND hwnd) {
 }
 
 // クライアント領域を描画する
-void FuriganaCtl_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect, RECT *update_rect) {
+void FuriganaCtl_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect) {
+    RECT rc = *client_rect;
+
+    // 背景を塗りつぶす
     HBRUSH hBrush = ::CreateSolidBrush(m_colors[1]);
-    ::FillRect(dc, update_rect, hBrush);
+    ::FillRect(dc, &rc, hBrush);
     ::DeleteObject(hBrush);
 
-    RECT rc = *client_rect;
+    // 余白を空ける
     rc.left += m_margin_rect.left;
     rc.top += m_margin_rect.top;
     rc.right -= m_margin_rect.right;
     rc.bottom -= m_margin_rect.bottom;
-    IntersectClipRect(dc, rc.left, rc.top, rc.right, rc.bottom);
 
-    UINT flags = get_draw_flags();
+    // スクロールを反映するためにビューポート原点を移す（負値）
+    ::SetViewportOrgEx(dc, -m_scroll_x, -m_scroll_y, NULL);
 
+    // 選択領域を更新
     m_doc.update_selection();
-    m_doc.draw_doc(dc, &rc, flags, m_colors);
+
+    // 描画
+    m_doc.draw_doc(dc, &rc, get_draw_flags(), m_colors);
 }
 
 //////////////////////////////////////////////////////////////////////////////

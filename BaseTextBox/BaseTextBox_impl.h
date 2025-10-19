@@ -35,7 +35,7 @@ struct BaseTextBox_impl {
     }
 
     void paint_client(HWND hwnd, HDC hDC = NULL);
-    virtual void paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect, RECT *update_rect);
+    virtual void paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect);
     virtual void invalidate();
 
     virtual BOOL OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);

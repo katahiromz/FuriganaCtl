@@ -37,7 +37,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
 
     virtual INT hit_test(INT x, INT y);
     virtual void invalidate();
-    virtual void paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect, RECT *update_rect);
+    virtual void paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect);
 
     virtual void OnSize(HWND hwnd, UINT state, INT cx, INT cy);
     virtual void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
