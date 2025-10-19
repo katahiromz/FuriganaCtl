@@ -143,11 +143,11 @@ struct TextDoc {
 
     void draw_doc(HDC dc, LPRECT prc, UINT flags, const COLORREF *colors = NULL);
     void get_ideal_size(LPRECT prc, UINT flags);
+    INT update_runs();
 
 protected:
     void _update_parts_height();
     void _update_parts_width();
-    INT _update_runs();
 
     void _draw_run(
         HDC dc,

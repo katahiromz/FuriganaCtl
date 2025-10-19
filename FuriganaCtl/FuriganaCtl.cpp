@@ -75,7 +75,7 @@ void FuriganaCtl_impl::update_scroll_info() {
 
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_PAGE | SIF_RANGE;
-    si.nMin = 0;
+
     si.nPage = pageW;
     si.nMax = maxHorz;
     ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
@@ -85,8 +85,6 @@ void FuriganaCtl_impl::update_scroll_info() {
     INT docH  = max(0, rcIdeal.bottom - rcIdeal.top);
     INT maxVert = max(0, docH - pageH);
 
-    si.fMask = SIF_PAGE | SIF_RANGE;
-    si.nMin = 0;
     si.nPage = pageH;
     si.nMax = maxVert;
     ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
@@ -385,8 +383,12 @@ void FuriganaCtl_impl::OnCopy(HWND hwnd) {
 
 // 当たり判定
 INT FuriganaCtl_impl::hit_test(INT x, INT y) {
-    x += ::GetScrollPos(m_hwnd, SB_HORZ) - m_margin_rect.left;
-    y += ::GetScrollPos(m_hwnd, SB_VERT) - m_margin_rect.top;
+    // Use the stored scroll offsets (m_scroll_x/m_scroll_y) rather than querying
+    // the scrollbar control via GetScrollPos(). This avoids races / inconsistencies
+    // between the control's scroll position and the internal m_scroll_* values
+    // used for painting.
+    x += m_scroll_x - m_margin_rect.left;
+    y += m_scroll_y - m_margin_rect.top;
     return m_doc.hit_test(x, y);
 }
 
@@ -615,7 +617,8 @@ void FuriganaCtl_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect) 
     rc.right -= m_margin_rect.right;
     rc.bottom -= m_margin_rect.bottom;
 
-    OffsetRect(&rc, -m_scroll_x, -m_scroll_y);
+    // スクロールを反映するためにビューポート原点を移す（負値）
+    ::SetViewportOrgEx(dc, -m_scroll_x, -m_scroll_y, NULL);
 
     // 選択領域を更新
     m_doc.update_selection();

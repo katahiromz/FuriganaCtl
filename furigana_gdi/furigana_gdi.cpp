@@ -308,7 +308,7 @@ void TextDoc::_update_parts_width() {
  */
 INT TextDoc::hit_test(INT x, INT y) {
     if (m_runs.empty()) {
-        _update_runs();
+        update_runs();
     }
 
     // 垂直方向
@@ -347,7 +347,7 @@ INT TextDoc::hit_test(INT x, INT y) {
  * 0個以上のランをする。
  * @return 入植したランの個数。
  */
-INT TextDoc::_update_runs() {
+INT TextDoc::update_runs() {
     m_runs.clear();
 
     // パーツの寸法を計算する
@@ -600,7 +600,7 @@ void TextDoc::draw_doc(
 
     m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : (prc->right - prc->left);
 
-    _update_runs();
+    update_runs();
 
     INT current_y = prc->top;
     INT max_run_width = 0;
