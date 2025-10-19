@@ -411,6 +411,30 @@ INT TextDoc::_UpdateRuns(HFONT hBaseFont, HFONT hRubyFont) {
     return (INT)m_runs.size();
 }
 
+std::wstring TextDoc::GetSelectedText() {
+    std::vector<TextPart>& parts = m_parts;
+    INT iStart = m_selection_start;
+    INT iEnd = m_selection_end;
+    if (iStart == -1) {
+        return L"";
+    } else {
+        if (iEnd == -1)
+            iEnd = (INT)parts.size();
+
+        if (iStart > iEnd)
+            std::swap(iStart, iEnd);
+
+        std::wstring text;
+        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
+            if (iStart <= (INT)iPart && (INT)iPart < iEnd) {
+                TextPart& part = parts[iPart];
+                text += m_text.substr(part.m_base_index, part.m_base_len);
+            }
+        }
+        return text;
+    }
+}
+
 /**
  * 1個のランを描画する。
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。

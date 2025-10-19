@@ -37,7 +37,10 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags);
     virtual void OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags);
     virtual void OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags);
+    virtual void OnRButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags);
     virtual void OnSysColorChange(HWND hwnd);
+    virtual void OnCopy(HWND hwnd);
+
     virtual LRESULT OnSetRubyRatio(INT mul, INT div);
     virtual LRESULT OnSetMargin(LPRECT prc);
     virtual LRESULT OnSetColor(INT iColor, COLORREF rgbColor);

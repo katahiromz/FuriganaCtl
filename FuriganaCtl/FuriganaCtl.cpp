@@ -94,6 +94,44 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
 }
 
+// WM_RBUTTONDOWN
+void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
+    if (fDoubleClick)
+        return;
+
+    OnCopy(hwnd);
+}
+
+// WM_COPY
+void FuriganaCtl_impl::OnCopy(HWND hwnd) {
+    std::wstring text = m_doc.GetSelectedText();
+
+    BOOL ok = FALSE;
+    if (::OpenClipboard(hwnd)) {
+        EmptyClipboard();
+
+        size_t cbText = (text.length() + 1) * sizeof(WCHAR);
+        HGLOBAL hGlobal = ::GlobalAlloc(GHND | GMEM_SHARE, cbText);
+        if (hGlobal) {
+            LPWSTR pszText = (LPWSTR)::GlobalLock(hGlobal);
+            ::CopyMemory(pszText, text.c_str(), cbText);
+            ::GlobalUnlock(hGlobal);
+
+            ::SetClipboardData(CF_UNICODETEXT, hGlobal);
+
+            ok = TRUE;
+        }
+
+        ::CloseClipboard();
+    }
+
+    if (ok) {
+        // TODO:
+    } else {
+        // TODO:
+    }
+}
+
 INT FuriganaCtl_impl::HitTest(INT x, INT y) {
     x -= m_margin_rect.left;
     y -= m_margin_rect.top;
@@ -215,6 +253,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
         HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
         HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pimpl()->OnSysColorChange);
+        HANDLE_MSG(hwnd, WM_COPY, pimpl()->OnCopy);
+        HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pimpl()->OnRButtonDown);
     case FC_SETRUBYRATIO:
         return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
     case FC_SETMARGIN:

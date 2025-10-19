@@ -130,6 +130,7 @@ struct TextDoc {
     void AddText(const std::wstring& text);
     void Clear();
     void UpdateSelection();
+    std::wstring GetSelectedText();
 
     INT HitTest(INT x, INT y) const;
 
