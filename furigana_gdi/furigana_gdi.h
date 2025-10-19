@@ -48,7 +48,7 @@ struct TextPart {
         m_selected = false;
     }
 
-    void UpdateWidth(TextDoc& doc);
+    void update_width(TextDoc& doc);
 };
 
 
@@ -77,8 +77,8 @@ struct TextRun {
         m_has_ruby = false;
     }
 
-    void UpdateWidth(TextDoc& doc);
-    void UpdateHeight(TextDoc& doc);
+    void update_width(TextDoc& doc);
+    void update_height(TextDoc& doc);
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -133,32 +133,32 @@ struct TextDoc {
         DeleteDC(m_dc);
     }
 
-    void AddText(const std::wstring& text);
+    void add_text(const std::wstring& text);
     void clear();
-    void SetSelection(INT iStart, INT iEnd);
-    void UpdateSelection();
-    std::wstring GetSelectedText();
+    void set_selection(INT iStart, INT iEnd);
+    void update_selection();
+    std::wstring get_selection_text();
 
-    INT HitTest(INT x, INT y);
+    INT hit_test(INT x, INT y);
 
-    void DrawDoc(
+    void draw_doc(
         HDC dc,
         LPRECT prc,
         UINT flags,
         const COLORREF *colors = NULL);
 
 protected:
-    void _UpdatePartsHeight();
-    void _UpdatePartsWidth();
-    INT _UpdateRuns();
+    void _update_parts_height();
+    void _update_parts_width();
+    INT _update_runs();
 
-    void _DrawRun(
+    void _draw_run(
         HDC dc,
         TextRun& run,
         LPRECT prc,
         UINT flags,
         const COLORREF *colors = NULL);
-    void _AddPara(const std::wstring& text);
+    void _add_para(const std::wstring& text);
 };
 
 /////////////////////////////////////////////////////////////////////////////

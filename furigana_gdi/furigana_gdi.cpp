@@ -38,7 +38,7 @@ static const COLORREF *get_default_colors() {
  * パートの幅を計測する。
  * @param doc 文書。
  */
-void TextPart::UpdateWidth(TextDoc& doc) {
+void TextPart::update_width(TextDoc& doc) {
     // 幅の計測
     HDC dc = doc.m_dc;
     HGDIOBJ hFontOld = SelectObject(dc, doc.m_hBaseFont);
@@ -72,7 +72,7 @@ void TextPart::UpdateWidth(TextDoc& doc) {
  * ランの高さを計測する。
  * @param doc 文書。
  */
-void TextRun::UpdateHeight(TextDoc& doc) {
+void TextRun::update_height(TextDoc& doc) {
     // ルビがあるか？
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
         assert(0 <= iPart && iPart < (INT)doc.m_parts.size());
@@ -95,12 +95,12 @@ void TextRun::UpdateHeight(TextDoc& doc) {
  * ランの幅を計測する。
  * @param doc 文書。
  */
-void TextRun::UpdateWidth(TextDoc& doc) {
+void TextRun::update_width(TextDoc& doc) {
     std::vector<TextPart>& parts = doc.m_parts;
     m_run_width = 0;
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
         TextPart& part = parts[iPart];
-        part.UpdateWidth(doc);
+        part.update_width(doc);
         m_run_width += part.m_part_width;
     }
 }
@@ -111,7 +111,7 @@ void TextRun::UpdateWidth(TextDoc& doc) {
 /**
  * 段落の選択を更新する
  */
-void TextDoc::UpdateSelection() {
+void TextDoc::update_selection() {
     std::vector<TextPart>& parts = m_parts;
     INT iStart = m_selection_start;
     INT iEnd = m_selection_end;
@@ -136,7 +136,7 @@ void TextDoc::UpdateSelection() {
  * 段落を追加する。
  * @param text テキスト文字列。
  */
-void TextDoc::_AddPara(const std::wstring& text) {
+void TextDoc::_add_para(const std::wstring& text) {
     size_t ich = m_text.size();
     m_text += text;
 
@@ -249,7 +249,7 @@ mstr_split(T_STR_CONTAINER& container,
  * テキストを追加する。
  * @param text テキスト文字列。
  */
-void TextDoc::AddText(const std::wstring& text) {
+void TextDoc::add_text(const std::wstring& text) {
     // 改行文字で分割
     std::vector<std::wstring> lines;
     mstr_split(lines, text, std::wstring(L"\n"));
@@ -258,7 +258,7 @@ void TextDoc::AddText(const std::wstring& text) {
         std::wstring line = lines[iLine];
         size_t ich = m_text.size() + line.size();
         // 段落を追加
-        _AddPara(line);
+        _add_para(line);
 
         if (iLine + 1 != lines.size()) {
             // 段落に含まれない改行文字を追加
@@ -282,7 +282,7 @@ void TextDoc::AddText(const std::wstring& text) {
 /**
  * パーツの高さを計算する。
  */
-void TextDoc::_UpdatePartsHeight() {
+void TextDoc::_update_parts_height() {
     HGDIOBJ hFontOld = SelectObject(m_dc, m_hBaseFont);
     TEXTMETRICW tm;
     GetTextMetricsW(m_dc, &tm);
@@ -296,10 +296,10 @@ void TextDoc::_UpdatePartsHeight() {
 /**
  * パーツの幅を計算する。
  */
-void TextDoc::_UpdatePartsWidth() {
+void TextDoc::_update_parts_width() {
     for (size_t iPart = 0; iPart < m_parts.size(); ++iPart) {
         TextPart& part = m_parts[iPart];
-        part.UpdateWidth(*this);
+        part.update_width(*this);
     }
 }
 
@@ -309,9 +309,9 @@ void TextDoc::_UpdatePartsWidth() {
  * @param y Y座標。
  * @return パートのインデックス。
  */
-INT TextDoc::HitTest(INT x, INT y) {
+INT TextDoc::hit_test(INT x, INT y) {
     if (m_runs.empty()) {
-        _UpdateRuns();
+        _update_runs();
     }
 
     // 垂直方向
@@ -350,12 +350,12 @@ INT TextDoc::HitTest(INT x, INT y) {
  * 0個以上のランをする。
  * @return 入植したランの個数。
  */
-INT TextDoc::_UpdateRuns() {
+INT TextDoc::_update_runs() {
     m_runs.clear();
 
     // パーツの寸法を計算する
-    _UpdatePartsHeight();
-    _UpdatePartsWidth();
+    _update_parts_height();
+    _update_parts_width();
 
     // 折り返し処理を行ってランを追加していく。ついでに各ランの幅を計算する
     size_t iPart, iPart0 = 0, iRun = 0;
@@ -393,19 +393,19 @@ INT TextDoc::_UpdateRuns() {
     m_para_height = 0;
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
         TextRun& run = m_runs[iRun];
-        run.UpdateHeight(*this);
+        run.update_height(*this);
         m_para_height += run.m_run_height;
     }
 
     return (INT)m_runs.size();
 }
 
-void TextDoc::SetSelection(INT iStart, INT iEnd) {
+void TextDoc::set_selection(INT iStart, INT iEnd) {
     m_selection_start = iStart;
     m_selection_end = iEnd;
 }
 
-std::wstring TextDoc::GetSelectedText() {
+std::wstring TextDoc::get_selection_text() {
     std::vector<TextPart>& parts = m_parts;
     INT iStart = m_selection_start;
     INT iEnd = m_selection_end;
@@ -436,7 +436,7 @@ std::wstring TextDoc::GetSelectedText() {
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
  */
-void TextDoc::_DrawRun(
+void TextDoc::_draw_run(
     HDC dc,
     TextRun& run,
     LPRECT prc,
@@ -569,7 +569,7 @@ void TextDoc::_DrawRun(
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
  */
-void TextDoc::DrawDoc(
+void TextDoc::draw_doc(
     HDC dc,
     LPRECT prc,
     UINT flags,
@@ -580,7 +580,7 @@ void TextDoc::DrawDoc(
 
     m_max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
 
-    _UpdateRuns();
+    _update_runs();
 
     INT current_y = prc->top;
     INT max_run_width = 0;
@@ -594,7 +594,7 @@ void TextDoc::DrawDoc(
         rc.top = current_y;
         rc.bottom = rc.top + run.m_run_height;
         if (dc && RectVisible(dc, &rc))
-            _DrawRun(dc, run, &rc, flags, colors);
+            _draw_run(dc, run, &rc, flags, colors);
 
         if (max_run_width < run.m_run_width)
             max_run_width = run.m_run_width;

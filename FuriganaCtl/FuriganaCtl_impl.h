@@ -50,7 +50,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual LRESULT OnSetLineGap(INT line_gap);
     virtual LRESULT OnSetSel(INT iStartSel, INT iEndSel);
 
-    virtual INT HitTest(INT x, INT y);
+    virtual INT hit_test(INT x, INT y);
     void SelectAll() {
         OnSetSel(0, -1);
     }

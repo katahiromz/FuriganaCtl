@@ -144,7 +144,7 @@ void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y,
 LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
     m_doc.m_selection_start = iStartSel;
     m_doc.m_selection_end = iEndSel;
-    m_doc.UpdateSelection();
+    m_doc.update_selection();
     m_self->invalidate();
     return TRUE;
 }
@@ -194,7 +194,7 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
 
 // WM_COPY
 void FuriganaCtl_impl::OnCopy(HWND hwnd) {
-    std::wstring text = m_doc.GetSelectedText();
+    std::wstring text = m_doc.get_selection_text();
 
     BOOL ok = FALSE;
     if (::OpenClipboard(hwnd)) {
@@ -223,10 +223,10 @@ void FuriganaCtl_impl::OnCopy(HWND hwnd) {
 }
 
 // 当たり判定
-INT FuriganaCtl_impl::HitTest(INT x, INT y) {
+INT FuriganaCtl_impl::hit_test(INT x, INT y) {
     x -= m_margin_rect.left;
     y -= m_margin_rect.top;
-    return m_doc.HitTest(x, y);
+    return m_doc.hit_test(x, y);
 }
 
 // WM_LBUTTONDOWN
@@ -235,8 +235,8 @@ void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y,
     SetFocus(hwnd);
     SetCapture(hwnd);
 
-    INT iPart = HitTest(x, y);
-    m_doc.SetSelection(iPart, iPart);
+    INT iPart = hit_test(x, y);
+    m_doc.set_selection(iPart, iPart);
     m_self->invalidate();
 }
 
@@ -247,8 +247,8 @@ void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
         return;
     }
 
-    INT iPart = HitTest(x, y);
-    m_doc.SetSelection(m_doc.m_selection_start, iPart);
+    INT iPart = hit_test(x, y);
+    m_doc.set_selection(m_doc.m_selection_start, iPart);
 
     m_self->invalidate();
 }
@@ -260,8 +260,8 @@ void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
         return;
     }
 
-    INT iPart = HitTest(x, y);
-    m_doc.SetSelection(m_doc.m_selection_start, iPart);
+    INT iPart = hit_test(x, y);
+    m_doc.set_selection(m_doc.m_selection_start, iPart);
 
     ::ReleaseCapture();
     m_self->invalidate();
@@ -334,8 +334,8 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     if (style & ES_RIGHT) flags |= DT_RIGHT;
 
     TextDoc& doc = pimpl()->m_doc;
-    doc.UpdateSelection();
-    doc.DrawDoc(dc, &rc, flags, pimpl()->m_colors);
+    doc.update_selection();
+    doc.draw_doc(dc, &rc, flags, pimpl()->m_colors);
 }
 
 // 無効にして再描画
@@ -343,7 +343,7 @@ void FuriganaCtl::invalidate() {
     TextDoc& doc = pimpl()->m_doc;
     if (doc.m_text != pimpl()->m_text) {
         doc.clear();
-        doc.AddText(pimpl()->m_text);
+        doc.add_text(pimpl()->m_text);
     }
     BaseTextBox::invalidate();
 }
