@@ -110,6 +110,22 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     m_doc.m_hRubyFont = m_sub_font;
 }
 
+// WM_KEYDOWN, WM_KEYUP
+void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT flags)
+{
+    if (!fDown)
+        return;
+
+    if (GetKeyState(VK_CONTROL) < 0 && vk == 'C') { // Ctrl+C
+        OnCopy(hwnd);
+        return;
+    }
+    if (GetKeyState(VK_CONTROL) < 0 && vk == 'A') { // Ctrl+A
+        SelectAll();
+        return;
+    }
+}
+
 // WM_GETDLGCODE
 UINT FuriganaCtl_impl::OnGetDlgCode(HWND hwnd, LPMSG lpmsg) {
     return DLGC_WANTALLKEYS;
@@ -316,6 +332,7 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_COPY, pimpl()->OnCopy);
         HANDLE_MSG(hwnd, WM_CONTEXTMENU, pimpl()->OnContextMenu);
         HANDLE_MSG(hwnd, WM_GETDLGCODE, pimpl()->OnGetDlgCode);
+        HANDLE_MSG(hwnd, WM_KEYDOWN, pimpl()->OnKey);
     case FC_SETRUBYRATIO:
         return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
     case FC_SETMARGIN:
