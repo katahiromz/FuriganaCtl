@@ -37,13 +37,11 @@ static const COLORREF *get_default_colors() {
 /**
  * パートの幅を計測する。
  * @param doc 文書。
- * @param hBaseFont ベーステキストのフォント。
- * @param hRubyFont ルビテキストのフォント。
  */
-void TextPart::UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
+void TextPart::UpdateWidth(TextDoc& doc) {
     // 幅の計測
     HDC dc = doc.m_dc;
-    HGDIOBJ hFontOld = SelectObject(dc, hBaseFont);
+    HGDIOBJ hFontOld = SelectObject(dc, doc.m_hBaseFont);
     std::wstring& text = doc.m_text;
     switch (m_type) {
     case TextPart::NORMAL:
@@ -53,7 +51,7 @@ void TextPart::UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
         break;
     case TextPart::RUBY:
         m_base_width = get_text_width(dc, &text[m_base_index], m_base_len);
-        SelectObject(dc, hRubyFont);
+        SelectObject(dc, doc.m_hRubyFont);
         m_ruby_width = get_text_width(dc, &text[m_ruby_index], m_ruby_len);
         // ルビブロックの幅は、ベースとルビの幅の大きい方
         m_part_width = std::max(m_base_width, m_ruby_width);
@@ -102,7 +100,7 @@ void TextRun::UpdateWidth(TextDoc& doc) {
     m_run_width = 0;
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
         TextPart& part = parts[iPart];
-        part.UpdateWidth(doc, doc.m_hBaseFont, doc.m_hRubyFont);
+        part.UpdateWidth(doc);
         m_run_width += part.m_part_width;
     }
 }
@@ -301,7 +299,7 @@ void TextDoc::_UpdatePartsHeight() {
 void TextDoc::_UpdatePartsWidth() {
     for (size_t iPart = 0; iPart < m_parts.size(); ++iPart) {
         TextPart& part = m_parts[iPart];
-        part.UpdateWidth(*this, m_hBaseFont, m_hRubyFont);
+        part.UpdateWidth(*this);
     }
 }
 

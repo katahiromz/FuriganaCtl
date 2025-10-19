@@ -48,7 +48,7 @@ struct TextPart {
         m_selected = false;
     }
 
-    void UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont);
+    void UpdateWidth(TextDoc& doc);
 };
 
 

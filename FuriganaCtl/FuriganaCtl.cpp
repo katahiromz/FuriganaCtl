@@ -10,26 +10,30 @@
 #include <new>
 #include <cassert>
 
+// メモリ不足時のメッセージ
 static inline void out_of_memory() {
     OutputDebugStringA("Out of memory!\n");
     MessageBoxA(NULL, "Out of memory!", "Error", MB_ICONERROR);
 }
 
+// デバッグ出力
 static inline void DPRINTF(LPCWSTR fmt, ...) {
 #ifndef NDEBUG
     WCHAR text[1024];
     va_list va;
     va_start(va, fmt);
-    wvsprintfW(text, fmt, va);
+    INT len = wvsprintfW(text, fmt, va);
+    assert(len < _countof(text));
     OutputDebugStringW(text);
     va_end(va);
 #endif
 }
 
-static HINSTANCE s_hinstDLL = NULL;
+// インスタンス。メニューを読み込むのに使う。
+static HINSTANCE s_hinst = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
-// FuriganaCtl_impl
+// FuriganaCtl_impl - FuriganaCtl実装用構造体
 
 #include "FuriganaCtl_impl.h"
 
@@ -153,21 +157,33 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
         yPos = rc.top;
     }
 
-    HMENU hMenu = ::LoadMenu(s_hinstDLL, MAKEINTRESOURCE(1));
+    HMENU hMenu = ::LoadMenu(s_hinst ? s_hinst : GetModuleHandle(NULL), MAKEINTRESOURCE(1));
     HMENU hSubMenu = ::GetSubMenu(hMenu, 0);
     if (hSubMenu) {
+        if (m_doc.m_selection_start == -1 || m_doc.m_selection_start == m_doc.m_selection_end)
+            ::EnableMenuItem(hSubMenu, 32767, MF_GRAYED); // 選択領域がなければコピーを無効化
+
+        if (m_doc.m_text.empty()) // テキストがなければ
+            ::EnableMenuItem(hSubMenu, 32766, MF_GRAYED); // 「すべて選択」を無効に
+
+        // TrackPopupMenuの不具合の回避策
+        SetForegroundWindow(hwnd);
+
         UINT uFlags = TPM_RIGHTBUTTON | TPM_RETURNCMD;
         INT id = TrackPopupMenu(hSubMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
         if (id != 0 && id != -1) {
             switch (id) {
-            case 32766:
+            case 32766: // すべて選択
                 SelectAll();
                 break;
-            case 32767:
+            case 32767: // コピー
                 OnCopy(hwnd);
                 break;
             }
         }
+
+        // TrackPopupMenuの不具合の回避策
+        PostMessageW(hwnd, WM_NULL, 0, 0);
     }
     ::DestroyMenu(hMenu);
 }
@@ -202,6 +218,7 @@ void FuriganaCtl_impl::OnCopy(HWND hwnd) {
     }
 }
 
+// 当たり判定
 INT FuriganaCtl_impl::HitTest(INT x, INT y) {
     x -= m_margin_rect.left;
     y -= m_margin_rect.top;
@@ -259,6 +276,7 @@ void FuriganaCtl_impl::OnSysColorChange(HWND hwnd) {
 //////////////////////////////////////////////////////////////////////////////
 // FuriganaCtl
 
+// 動的な生成を可能にする。
 IMPLEMENT_DYNAMIC(FuriganaCtl);
 
 FuriganaCtl::FuriganaCtl(HWND hwnd) {
@@ -271,6 +289,7 @@ FuriganaCtl::FuriganaCtl(HWND hwnd) {
 
 FuriganaCtl::~FuriganaCtl() { }
 
+// ウィンドウ クラスの登録
 BOOL FuriganaCtl::register_class(HINSTANCE inst) {
     WNDCLASSEXW wcx = { sizeof(wcx) };
     wcx.style = CS_PARENTDC | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
@@ -284,10 +303,12 @@ BOOL FuriganaCtl::register_class(HINSTANCE inst) {
     return ::RegisterClassExW(&wcx);
 }
 
+// 登録の解除
 BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
     return ::UnregisterClassW(get_class_name(), inst);
 }
 
+// クライアント領域を描画する
 void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     HBRUSH hBrush = ::CreateSolidBrush(pimpl()->m_colors[1]);
     ::FillRect(dc, client_rc, hBrush);
@@ -313,6 +334,7 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     doc.DrawDoc(dc, &rc, flags, pimpl()->m_colors);
 }
 
+// 無効にして再描画
 void FuriganaCtl::invalidate() {
     TextDoc& doc = pimpl()->m_doc;
     if (doc.m_text != pimpl()->m_text) {
@@ -322,6 +344,7 @@ void FuriganaCtl::invalidate() {
     BaseTextBox::invalidate();
 }
 
+// 内部ウィンドウ プロシージャ
 LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
         HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pimpl()->OnLButtonDown);
@@ -349,21 +372,20 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// DllMain
+// DllMain - DLLのメイン関数
 
 #ifdef FURIGANA_CTL_EXPORT
 BOOL WINAPI
 DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
-        s_hinstDLL = hinstDLL;
+        s_hinst = hinstDLL;
         OutputDebugStringA("DLL_PROCESS_ATTACH\n");
         FuriganaCtl::register_class(NULL);
         break;
     case DLL_PROCESS_DETACH:
         OutputDebugStringA("DLL_PROCESS_DETACH\n");
         FuriganaCtl::unregister_class(NULL);
-        s_hinstDLL = NULL;
         break;
     }
     return TRUE;
