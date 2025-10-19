@@ -77,8 +77,8 @@ struct TextRun {
         m_has_ruby = false;
     }
 
-    void UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont);
-    void UpdateHeight(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont);
+    void UpdateWidth(TextDoc& doc);
+    void UpdateHeight(TextDoc& doc);
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -111,50 +111,51 @@ struct TextDoc {
     INT m_para_height;
     INT m_max_width;
     INT m_line_gap;
+    INT m_ruby_ratio_mul;
+    INT m_ruby_ratio_div;
+    HFONT m_hBaseFont;
+    HFONT m_hRubyFont;
 
     TextDoc() {
         m_dc = CreateCompatibleDC(NULL);
         m_base_height = 0;
         m_ruby_height = 0;
         m_selection_start = -1;
-        m_selection_end = -1;
+        m_selection_end = 0;
         m_para_width = 0;
         m_para_height = 0;
         m_max_width = 0;
         m_line_gap = 2;
+        m_hBaseFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
+        m_hRubyFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
     }
     ~TextDoc() {
         DeleteDC(m_dc);
     }
 
     void AddText(const std::wstring& text);
-    void Clear();
+    void clear();
+    void SetSelection(INT iStart, INT iEnd);
     void UpdateSelection();
     std::wstring GetSelectedText();
 
-    INT HitTest(INT x, INT y) const;
-
-    void Update(TextPara& para, HFONT hBaseFont, HFONT hRubyFont);
+    INT HitTest(INT x, INT y);
 
     void DrawDoc(
         HDC dc,
         LPRECT prc,
-        HFONT hBaseFont,
-        HFONT hRubyFont,
         UINT flags,
         const COLORREF *colors = NULL);
 
 protected:
-    void _UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont);
-    void _UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont);
-    INT _UpdateRuns(HFONT hBaseFont, HFONT hRubyFont);
+    void _UpdatePartsHeight();
+    void _UpdatePartsWidth();
+    INT _UpdateRuns();
 
     void _DrawRun(
         HDC dc,
         TextRun& run,
         LPRECT prc,
-        HFONT hBaseFont,
-        HFONT hRubyFont,
         UINT flags,
         const COLORREF *colors = NULL);
     void _AddPara(const std::wstring& text);

@@ -73,10 +73,8 @@ void TextPart::UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
 /**
  * ランの高さを計測する。
  * @param doc 文書。
- * @param hBaseFont ベーステキストのフォント。
- * @param hRubyFont ルビテキストのフォント。
  */
-void TextRun::UpdateHeight(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
+void TextRun::UpdateHeight(TextDoc& doc) {
     // ルビがあるか？
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
         assert(0 <= iPart && iPart < (INT)doc.m_parts.size());
@@ -98,15 +96,13 @@ void TextRun::UpdateHeight(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
 /**
  * ランの幅を計測する。
  * @param doc 文書。
- * @param hBaseFont ベーステキストのフォント。
- * @param hRubyFont ルビテキストのフォント。
  */
-void TextRun::UpdateWidth(TextDoc& doc, HFONT hBaseFont, HFONT hRubyFont) {
+void TextRun::UpdateWidth(TextDoc& doc) {
     std::vector<TextPart>& parts = doc.m_parts;
     m_run_width = 0;
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
         TextPart& part = parts[iPart];
-        part.UpdateWidth(doc, hBaseFont, hRubyFont);
+        part.UpdateWidth(doc, doc.m_hBaseFont, doc.m_hRubyFont);
         m_run_width += part.m_part_width;
     }
 }
@@ -287,15 +283,13 @@ void TextDoc::AddText(const std::wstring& text) {
 
 /**
  * パーツの高さを計算する。
- * @param hBaseFont ベーステキストのフォント。
- * @param hRubyFont ルビテキストのフォント。
  */
-void TextDoc::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
-    HGDIOBJ hFontOld = SelectObject(m_dc, hBaseFont);
+void TextDoc::_UpdatePartsHeight() {
+    HGDIOBJ hFontOld = SelectObject(m_dc, m_hBaseFont);
     TEXTMETRICW tm;
     GetTextMetricsW(m_dc, &tm);
     m_base_height = tm.tmHeight; // ベーステキストのフォントの高さ
-    SelectObject(m_dc, hRubyFont);
+    SelectObject(m_dc, m_hRubyFont);
     GetTextMetricsW(m_dc, &tm);
     m_ruby_height = tm.tmHeight; // ルビテキストのフォントの高さ
     SelectObject(m_dc, hFontOld);
@@ -303,13 +297,11 @@ void TextDoc::_UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont) {
 
 /**
  * パーツの幅を計算する。
- * @param hBaseFont ベーステキストのフォント。
- * @param hRubyFont ルビテキストのフォント。
  */
-void TextDoc::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
+void TextDoc::_UpdatePartsWidth() {
     for (size_t iPart = 0; iPart < m_parts.size(); ++iPart) {
         TextPart& part = m_parts[iPart];
-        part.UpdateWidth(*this, hBaseFont, hRubyFont);
+        part.UpdateWidth(*this, m_hBaseFont, m_hRubyFont);
     }
 }
 
@@ -319,9 +311,10 @@ void TextDoc::_UpdatePartsWidth(HFONT hBaseFont, HFONT hRubyFont) {
  * @param y Y座標。
  * @return パートのインデックス。
  */
-INT TextDoc::HitTest(INT x, INT y) const {
-    if (m_runs.empty())
-        return 0;
+INT TextDoc::HitTest(INT x, INT y) {
+    if (m_runs.empty()) {
+        _UpdateRuns();
+    }
 
     // 垂直方向
     INT current_y = 0;
@@ -344,9 +337,9 @@ INT TextDoc::HitTest(INT x, INT y) const {
         INT current_x = 0;
         for (; iPart < run.m_part_index_end; ++iPart) {
             const TextPart& part = m_parts[iPart];
-            current_x += part.m_part_width;
-            if (x < current_x - part.m_part_width / 2)
+            if (x < current_x + part.m_part_width / 2)
                 return (INT)iPart;
+            current_x += part.m_part_width;
         }
 
         return (INT)run.m_part_index_end;
@@ -357,16 +350,14 @@ INT TextDoc::HitTest(INT x, INT y) const {
 
 /**
  * 0個以上のランをする。
- * @param hBaseFont ベーステキストのフォント。
- * @param hRubyFont ルビテキストのフォント。
  * @return 入植したランの個数。
  */
-INT TextDoc::_UpdateRuns(HFONT hBaseFont, HFONT hRubyFont) {
+INT TextDoc::_UpdateRuns() {
     m_runs.clear();
 
     // パーツの寸法を計算する
-    _UpdatePartsHeight(hBaseFont, hRubyFont);
-    _UpdatePartsWidth(hBaseFont, hRubyFont);
+    _UpdatePartsHeight();
+    _UpdatePartsWidth();
 
     // 折り返し処理を行ってランを追加していく。ついでに各ランの幅を計算する
     size_t iPart, iPart0 = 0, iRun = 0;
@@ -404,11 +395,16 @@ INT TextDoc::_UpdateRuns(HFONT hBaseFont, HFONT hRubyFont) {
     m_para_height = 0;
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
         TextRun& run = m_runs[iRun];
-        run.UpdateHeight(*this, hBaseFont, hRubyFont);
+        run.UpdateHeight(*this);
         m_para_height += run.m_run_height;
     }
 
     return (INT)m_runs.size();
+}
+
+void TextDoc::SetSelection(INT iStart, INT iEnd) {
+    m_selection_start = iStart;
+    m_selection_end = iEnd;
 }
 
 std::wstring TextDoc::GetSelectedText() {
@@ -440,16 +436,12 @@ std::wstring TextDoc::GetSelectedText() {
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
  * @param run 描画したいラン。
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
- * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
- * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
  */
 void TextDoc::_DrawRun(
     HDC dc,
     TextRun& run,
     LPRECT prc,
-    HFONT hBaseFont,
-    HFONT hRubyFont,
     UINT flags,
     const COLORREF *colors)
 {
@@ -489,7 +481,7 @@ void TextDoc::_DrawRun(
     const INT base_y = prc->top + run.m_ruby_height; // ベーステキストのY座標
 
     // しきい値を取得する
-    HGDIOBJ hFontOld = SelectObject(hdc, hBaseFont);
+    HGDIOBJ hFontOld = SelectObject(hdc, m_hBaseFont);
     INT gap_threshold = get_text_width(hdc, L"漢i", 2);
     SelectObject(hdc, hFontOld);
 
@@ -516,7 +508,7 @@ void TextDoc::_DrawRun(
             switch (part.m_type) {
             case TextPart::NORMAL:
                 // 通常テキストの描画 (ベースラインに描画)
-                hFontOld = SelectObject(dc, hBaseFont);
+                hFontOld = SelectObject(dc, m_hBaseFont);
                 ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
                 SelectObject(dc, hFontOld);
                 break;
@@ -543,12 +535,12 @@ void TextDoc::_DrawRun(
                     }
 
                     // ベーステキストの描画
-                    hFontOld = SelectObject(dc, hBaseFont);
+                    hFontOld = SelectObject(dc, m_hBaseFont);
                     ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
                     SelectObject(dc, hFontOld);
 
                     // ルビテキストの描画
-                    hFontOld = SelectObject(dc, hRubyFont);
+                    hFontOld = SelectObject(dc, m_hRubyFont);
                     INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
                     ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
                     SetTextCharacterExtra(dc, old_extra_ruby);
@@ -577,15 +569,11 @@ void TextDoc::_DrawRun(
  * 文書を描画する。
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
- * @param hBaseFont ベーステキスト（漢字・通常文字）に使用するフォント。
- * @param hRubyFont ルビテキスト（フリガナ）に使用するフォント。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
  */
 void TextDoc::DrawDoc(
     HDC dc,
     LPRECT prc,
-    HFONT hBaseFont,
-    HFONT hRubyFont,
     UINT flags,
     const COLORREF *colors)
 {
@@ -594,7 +582,7 @@ void TextDoc::DrawDoc(
 
     m_max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
 
-    _UpdateRuns(hBaseFont, hRubyFont);
+    _UpdateRuns();
 
     INT current_y = prc->top;
     INT max_run_width = 0;
@@ -608,7 +596,7 @@ void TextDoc::DrawDoc(
         rc.top = current_y;
         rc.bottom = rc.top + run.m_run_height;
         if (dc && RectVisible(dc, &rc))
-            _DrawRun(dc, run, &rc, hBaseFont, hRubyFont, flags, colors);
+            _DrawRun(dc, run, &rc, flags, colors);
 
         if (max_run_width < run.m_run_width)
             max_run_width = run.m_run_width;
@@ -627,7 +615,7 @@ void TextDoc::DrawDoc(
 /**
  * 文書をクリアする。
  */
-void TextDoc::Clear() {
+void TextDoc::clear() {
     m_text.clear();
     m_parts.clear();
     m_runs.clear();

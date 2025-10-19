@@ -15,6 +15,17 @@ static inline void out_of_memory() {
     MessageBoxA(NULL, "Out of memory!", "Error", MB_ICONERROR);
 }
 
+static inline void DPRINTF(LPCWSTR fmt, ...) {
+#ifndef NDEBUG
+    WCHAR text[1024];
+    va_list va;
+    va_start(va, fmt);
+    wvsprintfW(text, fmt, va);
+    OutputDebugStringW(text);
+    va_end(va);
+#endif
+}
+
 static HINSTANCE s_hinstDLL = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -26,8 +37,8 @@ static HINSTANCE s_hinstDLL = NULL;
 LRESULT FuriganaCtl_impl::OnSetRubyRatio(INT mul, INT div) {
     if (mul >= 0 && div > 0)
     {
-        m_ruby_ratio_mul = mul; // ルビ比率の分子
-        m_ruby_ratio_div = div; // ルビ比率の分母
+        m_doc.m_ruby_ratio_mul = mul; // ルビ比率の分子
+        m_doc.m_ruby_ratio_div = div; // ルビ比率の分母
         return TRUE;
     }
     return FALSE;
@@ -85,8 +96,8 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
     LOGFONT lf;
     ::GetObject(hfont, sizeof(lf), &lf);
-    lf.lfHeight *= m_ruby_ratio_mul;
-    lf.lfHeight /= m_ruby_ratio_div;
+    lf.lfHeight *= m_doc.m_ruby_ratio_mul;
+    lf.lfHeight /= m_doc.m_ruby_ratio_div;
 
     if (m_own_sub_font && m_sub_font)
         ::DeleteObject(m_sub_font);
@@ -94,11 +105,14 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     m_sub_font = ::CreateFontIndirect(&lf);
 
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
+
+    m_doc.m_hBaseFont = m_font;
+    m_doc.m_hRubyFont = m_sub_font;
 }
 
 // WM_GETDLGCODE
 UINT FuriganaCtl_impl::OnGetDlgCode(HWND hwnd, LPMSG lpmsg) {
-    return DLGC_WANTALLKEYS | DLGC_HASSETSEL;
+    return DLGC_WANTALLKEYS;
 }
 
 // WM_RBUTTONDOWN
@@ -178,43 +192,39 @@ INT FuriganaCtl_impl::HitTest(INT x, INT y) {
     return m_doc.HitTest(x, y);
 }
 
-static POINT s_ptHit;
-
 // WM_LBUTTONDOWN
 void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
+    DPRINTF(L"OnLButtonDown: %d, %d, %p\n", x, y, GetCapture());
     SetFocus(hwnd);
     SetCapture(hwnd);
 
     INT iPart = HitTest(x, y);
-    m_doc.m_selection_start = m_doc.m_selection_end = iPart;
+    m_doc.SetSelection(iPart, iPart);
     m_self->invalidate();
-
-    s_ptHit.x = x;
-    s_ptHit.y = y;
 }
 
 // WM_MOUSEMOVE
 void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
-    if (::GetCapture() != hwnd)
+    //DPRINTF(L"OnMouseMove: %d, %d, %p\n", x, y, GetCapture());
+    if (::GetCapture() != hwnd) {
         return;
+    }
 
     INT iPart = HitTest(x, y);
-    m_doc.m_selection_end = iPart;
+    m_doc.SetSelection(m_doc.m_selection_start, iPart);
 
     m_self->invalidate();
 }
 
 // WM_LBUTTONUP
 void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
-    if (::GetCapture() != hwnd)
+    DPRINTF(L"OnLButtonUp: %d, %d, %p\n", x, y, GetCapture());
+    if (::GetCapture() != hwnd) {
         return;
+    }
 
     INT iPart = HitTest(x, y);
-    if (s_ptHit.x != x || s_ptHit.y != y) {
-        m_doc.m_selection_end = iPart;
-    } else {
-        m_doc.m_selection_start = m_doc.m_selection_end = iPart;
-    }
+    m_doc.SetSelection(m_doc.m_selection_start, iPart);
 
     ::ReleaseCapture();
     m_self->invalidate();
@@ -284,13 +294,15 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
 
     TextDoc& doc = pimpl()->m_doc;
     doc.UpdateSelection();
-    doc.DrawDoc(dc, &rc, pimpl()->m_font, pimpl()->m_sub_font, flags, pimpl()->m_colors);
+    doc.DrawDoc(dc, &rc, flags, pimpl()->m_colors);
 }
 
 void FuriganaCtl::invalidate() {
     TextDoc& doc = pimpl()->m_doc;
-    doc.Clear();
-    doc.AddText(pimpl()->m_text);
+    if (doc.m_text != pimpl()->m_text) {
+        doc.clear();
+        doc.AddText(pimpl()->m_text);
+    }
     BaseTextBox::invalidate();
 }
 
