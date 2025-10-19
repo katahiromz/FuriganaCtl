@@ -400,11 +400,20 @@ INT TextDoc::_update_runs() {
     return (INT)m_runs.size();
 }
 
+/**
+ * 選択位置を設定する。
+ * @param iStart パートの開始インデックス。
+ * @param iEnd パートの終了インデックス。
+ */
 void TextDoc::set_selection(INT iStart, INT iEnd) {
     m_selection_start = iStart;
     m_selection_end = iEnd;
 }
 
+/**
+ * 選択テキストを取得する。
+ * @return 取得したテキスト文字列。
+ */
 std::wstring TextDoc::get_selection_text() {
     std::vector<TextPart>& parts = m_parts;
     INT iStart = m_selection_start;
@@ -430,11 +439,21 @@ std::wstring TextDoc::get_selection_text() {
 }
 
 /**
+ * 文書をクリアする。
+ */
+void TextDoc::clear() {
+    m_text.clear();
+    m_parts.clear();
+    m_runs.clear();
+    m_paras.clear();
+}
+
+/**
  * 1個のランを描画する。
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
  * @param run 描画したいラン。
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
- * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
+ * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_SINGLELINE。
  */
 void TextDoc::_draw_run(
     HDC dc,
@@ -443,6 +462,8 @@ void TextDoc::_draw_run(
     UINT flags,
     const COLORREF *colors)
 {
+    assert(prc);
+
     if (!colors)
         colors = get_default_colors();
 
@@ -567,7 +588,7 @@ void TextDoc::_draw_run(
  * 文書を描画する。
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
- * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT。
+ * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_SINGLELINE。
  */
 void TextDoc::draw_doc(
     HDC dc,
@@ -575,10 +596,12 @@ void TextDoc::draw_doc(
     UINT flags,
     const COLORREF *colors)
 {
+    assert(prc);
+
     if (!colors)
         colors = get_default_colors();
 
-    m_max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
+    m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : (prc->right - prc->left);
 
     _update_runs();
 
@@ -611,11 +634,12 @@ void TextDoc::draw_doc(
 }
 
 /**
- * 文書をクリアする。
+ * 文書の理想的なサイズを取得する。
+ * @param prc クライアント領域のRECT構造体へのポインタ。関数はサイズを変更する。
+ * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_SINGLELINE。
  */
-void TextDoc::clear() {
-    m_text.clear();
-    m_parts.clear();
-    m_runs.clear();
-    m_paras.clear();
+void TextDoc::get_ideal_size(LPRECT prc, UINT flags, const COLORREF *colors)
+{
+    assert(prc);
+    draw_doc(NULL, prc, flags, colors);
 }
