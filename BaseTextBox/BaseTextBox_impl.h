@@ -17,8 +17,6 @@ struct BaseTextBox_impl {
     wchar_t *m_text;
     INT m_text_length;
     INT m_text_capacity;
-    INT m_scroll_step_cx;
-    INT m_scroll_step_cy;
 
     BaseTextBox_impl(HWND hwnd, BaseTextBox *self) {
         m_self = self;
@@ -29,8 +27,6 @@ struct BaseTextBox_impl {
         m_text = NULL;
         m_text_length = 0;
         m_text_capacity = 0;
-        m_scroll_step_cx = 25;
-        m_scroll_step_cy = 25;
     }
     virtual ~BaseTextBox_impl() {
         if (m_own_font && m_font)
@@ -39,16 +35,15 @@ struct BaseTextBox_impl {
     }
 
     void paint_client(HWND hwnd, HDC hDC = NULL);
+    virtual void paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect, RECT *update_rect);
     virtual void invalidate();
 
     virtual BOOL OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
     virtual void OnDestroy(HWND hwnd);
     virtual HFONT OnGetFont(HWND hwnd);
     virtual void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
-    virtual INT OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText);
+    virtual INT OnGetText(HWND hwnd, INT cchTextMax, LPTSTR lpszText);
     virtual INT OnGetTextLength(HWND hwnd);
     virtual void OnSetText(HWND hwnd, LPCTSTR lpszText);
     virtual void OnPaint(HWND hwnd);
-    virtual void OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos);
-    virtual void OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos);
 };

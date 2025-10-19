@@ -168,7 +168,7 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 }
 
 // WM_KEYDOWN, WM_KEYUP
-void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT flags)
+void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT flags)
 {
     if (!fDown)
         return;
@@ -268,7 +268,7 @@ UINT FuriganaCtl_impl::OnGetDlgCode(HWND hwnd, LPMSG lpmsg) {
 }
 
 // WM_RBUTTONDOWN
-void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
+void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlags) {
     SetFocus(hwnd);
 }
 
@@ -324,7 +324,7 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
 }
 
 // WM_MOUSEWHEEL
-void FuriganaCtl_impl::OnMouseWheel(HWND hwnd, int xPos, int yPos, int zDelta, UINT fwKeys)
+void FuriganaCtl_impl::OnMouseWheel(HWND hwnd, INT xPos, INT yPos, INT zDelta, UINT fwKeys)
 {
     if (::GetKeyState(VK_SHIFT) < 0) {
         if (zDelta < 0)
@@ -377,7 +377,7 @@ INT FuriganaCtl_impl::hit_test(INT x, INT y) {
 }
 
 // WM_LBUTTONDOWN
-void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
+void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, INT x, INT y, UINT keyFlags) {
     DPRINTF(L"OnLButtonDown: %d, %d, %p\n", x, y, GetCapture());
     SetFocus(hwnd);
     SetCapture(hwnd);
@@ -388,7 +388,7 @@ void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y,
 }
 
 // WM_MOUSEMOVE
-void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
+void FuriganaCtl_impl::OnMouseMove(HWND hwnd, INT x, INT y, UINT keyFlags) {
     //DPRINTF(L"OnMouseMove: %d, %d, %p\n", x, y, GetCapture());
     if (::GetCapture() != hwnd) {
         return;
@@ -401,7 +401,7 @@ void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
 }
 
 // WM_LBUTTONUP
-void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
+void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, INT x, INT y, UINT keyFlags) {
     DPRINTF(L"OnLButtonUp: %d, %d, %p\n", x, y, GetCapture());
     if (::GetCapture() != hwnd) {
         return;
@@ -422,6 +422,189 @@ void FuriganaCtl_impl::OnSysColorChange(HWND hwnd) {
     if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID); ++iColor;
     if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID);
     invalidate();
+}
+
+// WM_SIZE
+void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
+    // クライアントサイズからスクロール範囲を決定する
+    RECT rcClient = {0, 0, cx, cy};
+    RECT rc = rcClient;
+    rc.left += m_margin_rect.left;
+    rc.top += m_margin_rect.top;
+    rc.right -= m_margin_rect.right;
+    rc.bottom -= m_margin_rect.bottom;
+
+    // flags: シングルラインかどうか
+    DWORD flags = get_draw_flags();
+
+    // doc のサイズ計算（描画計測）
+    RECT rcIdeal = rc;
+    m_doc.get_ideal_size(&rcIdeal, flags);
+    INT doc_width = m_doc.m_para_width;
+    INT doc_height = m_doc.m_para_height;
+
+    // 垂直スクロール設定
+    SCROLLINFO si;
+    si.cbSize = sizeof(si);
+    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+    si.nMin = 0;
+    si.nMax = max(0, doc_height - (rc.bottom - rc.top));
+    si.nPage = max(0, rc.bottom - rc.top);
+    si.nPos = m_scroll_y;
+    if (si.nPos > si.nMax) si.nPos = si.nMax;
+    SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+    m_scroll_y = si.nPos;
+
+    // 水平スクロール設定（単一行のとき等）
+    si.nMin = 0;
+    si.nMax = max(0, doc_width - (rc.right - rc.left));
+    si.nPage = max(0, rc.right - rc.left);
+    si.nPos = m_scroll_x;
+    if (si.nPos > si.nMax) si.nPos = si.nMax;
+    SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+    m_scroll_x = si.nPos;
+}
+
+// WM_HSCROLL
+void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
+    SCROLLINFO si = { sizeof(si) };
+    si.fMask = SIF_ALL;
+    GetScrollInfo(hwnd, SB_HORZ, &si);
+
+    INT nPos = si.nPos;
+    switch (code) {
+    case SB_LINELEFT:
+        nPos = max(si.nMin, nPos - 1);
+        break;
+    case SB_LINERIGHT:
+        nPos = min(si.nMax, nPos + 1);
+        break;
+    case SB_PAGELEFT:
+        nPos = max(si.nMin, nPos - (INT)si.nPage);
+        break;
+    case SB_PAGERIGHT:
+        nPos = min(si.nMax, nPos + (INT)si.nPage);
+        break;
+    case SB_THUMBTRACK:
+    case SB_THUMBPOSITION:
+        nPos = pos;
+        break;
+    case SB_LEFT:
+        nPos = si.nMin;
+        break;
+    case SB_RIGHT:
+        nPos = si.nMax;
+        break;
+    default:
+        return;
+    }
+
+    if (nPos != si.nPos) {
+        si.fMask = SIF_POS;
+        si.nPos = nPos;
+        SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+        m_scroll_x = nPos;
+        invalidate();
+    }
+}
+
+// WM_VSCROLL
+void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
+    SCROLLINFO si = { sizeof(si) };
+    si.fMask = SIF_ALL;
+    GetScrollInfo(hwnd, SB_VERT, &si);
+
+    INT nPos = si.nPos;
+    switch (code) {
+    case SB_LINEUP:
+        nPos = max(si.nMin, nPos - 1);
+        break;
+    case SB_LINEDOWN:
+        nPos = min(si.nMax, nPos + 1);
+        break;
+    case SB_PAGEUP:
+        nPos = max(si.nMin, nPos - (INT)si.nPage);
+        break;
+    case SB_PAGEDOWN:
+        nPos = min(si.nMax, nPos + (INT)si.nPage);
+        break;
+    case SB_THUMBTRACK:
+    case SB_THUMBPOSITION:
+        nPos = pos;
+        break;
+    case SB_TOP:
+        nPos = si.nMin;
+        break;
+    case SB_BOTTOM:
+        nPos = si.nMax;
+        break;
+    default:
+        return;
+    }
+
+    if (nPos != si.nPos) {
+        si.fMask = SIF_POS;
+        si.nPos = nPos;
+        SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+        m_scroll_y = nPos;
+        invalidate();
+    }
+}
+
+// WM_PAINT
+void FuriganaCtl_impl::OnPaint(HWND hwnd) {
+    PAINTSTRUCT ps;
+    HDC dc = ::BeginPaint(hwnd, &ps);
+    if (!dc) return;
+
+    // クライアント領域
+    RECT rcClient;
+    GetClientRect(hwnd, &rcClient);
+    INT cx = rcClient.right - rcClient.left;
+    INT cy = rcClient.bottom - rcClient.top;
+    assert(cx > 0 && cy > 0);
+
+    // メモリDCの作成（ダブルバッファ）
+    HDC memDC = CreateCompatibleDC(dc);
+    HBITMAP hbm = CreateCompatibleBitmap(dc, cx, cy);
+    HGDIOBJ oldBmp = SelectObject(memDC, hbm);
+
+    // フォント設定
+    HGDIOBJ oldFont = NULL;
+    if (m_font) oldFont = SelectObject(memDC, m_font);
+
+    RECT rcDraw = ps.rcPaint;
+    paint_client_inner(hwnd, memDC, &rcClient, &rcDraw);
+
+    // ビットブロットで画面へ転送
+    BitBlt(dc, 0, 0, cx, cy, memDC, 0, 0, SRCCOPY);
+
+    // 後片付け
+    if (m_font && oldFont) SelectObject(memDC, oldFont);
+    SelectObject(memDC, oldBmp);
+    DeleteObject(hbm);
+    DeleteDC(memDC);
+
+    ::EndPaint(hwnd, &ps);
+}
+
+// クライアント領域を描画する
+void FuriganaCtl_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect, RECT *update_rect) {
+    HBRUSH hBrush = ::CreateSolidBrush(m_colors[1]);
+    ::FillRect(dc, update_rect, hBrush);
+    ::DeleteObject(hBrush);
+
+    RECT rc = *client_rect;
+    rc.left += m_margin_rect.left;
+    rc.top += m_margin_rect.top;
+    rc.right -= m_margin_rect.right;
+    rc.bottom -= m_margin_rect.bottom;
+    IntersectClipRect(dc, rc.left, rc.top, rc.right, rc.bottom);
+
+    UINT flags = get_draw_flags();
+
+    m_doc.update_selection();
+    m_doc.draw_doc(dc, &rc, flags, m_colors);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -459,34 +642,10 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
     return ::UnregisterClassW(get_class_name(), inst);
 }
 
-// クライアント領域を描画する
-void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
-    HBRUSH hBrush = ::CreateSolidBrush(pimpl()->m_colors[1]);
-    ::FillRect(dc, client_rc, hBrush);
-    ::DeleteObject(hBrush);
-
-    const RECT& margin_rect = pimpl()->m_margin_rect;
-    RECT rc = *client_rc;
-    rc.left += margin_rect.left;
-    rc.top += margin_rect.top;
-    rc.right -= margin_rect.right;
-    rc.bottom -= margin_rect.bottom;
-    IntersectClipRect(dc, rc.left, rc.top, rc.right, rc.bottom);
-
-    INT xScroll = GetScrollPos(hwnd, SB_HORZ);
-    INT yScroll = GetScrollPos(hwnd, SB_VERT);
-    OffsetRect(&rc, -xScroll, -yScroll);
-
-    UINT flags = pimpl()->get_draw_flags();
-
-    TextDoc& doc = pimpl()->m_doc;
-    doc.update_selection();
-    doc.draw_doc(dc, &rc, flags, pimpl()->m_colors);
-}
-
 // 内部ウィンドウ プロシージャ
 LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
+        HANDLE_MSG(hwnd, WM_PAINT, pimpl()->OnPaint);
         HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pimpl()->OnLButtonDown);
         HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
         HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
@@ -497,6 +656,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_CONTEXTMENU, pimpl()->OnContextMenu);
         HANDLE_MSG(hwnd, WM_GETDLGCODE, pimpl()->OnGetDlgCode);
         HANDLE_MSG(hwnd, WM_KEYDOWN, pimpl()->OnKey);
+        HANDLE_MSG(hwnd, WM_HSCROLL, pimpl()->OnHScroll);
+        HANDLE_MSG(hwnd, WM_VSCROLL, pimpl()->OnVScroll);
     case FC_SETRUBYRATIO:
         return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
     case FC_SETMARGIN:

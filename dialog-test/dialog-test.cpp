@@ -61,7 +61,7 @@ void OnDestroy(HWND hwnd)
     g_hFont = NULL;
 }
 
-void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
+void OnCommand(HWND hwnd, INT id, HWND hwndCtl, UINT codeNotify)
 {
     switch (id)
     {

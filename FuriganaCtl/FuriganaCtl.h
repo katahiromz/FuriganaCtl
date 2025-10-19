@@ -33,5 +33,4 @@ protected:
     friend struct FuriganaCtl_impl;
 
     virtual LRESULT CALLBACK window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    void draw_client(HWND hwnd, HDC dc, RECT *client_rc) override;
 };

@@ -68,7 +68,6 @@ protected:
     struct BaseTextBox_impl *m_pimpl;
 
     virtual LRESULT CALLBACK window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    virtual void draw_client(HWND hwnd, HDC dc, RECT *client_rc);
 
 public:
     // for DECLARE_DYNAMIC/IMPLEMENT_DYNAMIC

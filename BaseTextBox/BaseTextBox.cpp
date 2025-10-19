@@ -73,7 +73,7 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 }
 
 // WM_GETTEXT
-INT BaseTextBox_impl::OnGetText(HWND hwnd, int cchTextMax, LPTSTR lpszText) {
+INT BaseTextBox_impl::OnGetText(HWND hwnd, INT cchTextMax, LPTSTR lpszText) {
     if (!m_text) {
         if (cchTextMax > 0) lpszText[0] = 0;
         return 0;
@@ -120,9 +120,19 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
     invalidate();
 }
 
-// WM_PAINT
-void BaseTextBox_impl::OnPaint(HWND hwnd) {
-    paint_client(hwnd, NULL);
+void BaseTextBox_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect, RECT *update_rect) {
+    HGDIOBJ old_font = NULL;
+    if (m_font)
+        old_font = ::SelectObject(dc, m_font);
+
+    INT old_mode = ::SetBkMode(dc, TRANSPARENT);
+    ::SetTextColor(dc, ::GetSysColor(COLOR_WINDOWTEXT));
+    ::DrawText(dc, m_text, m_text_length, client_rect,
+               DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
+    ::SetBkMode(dc, old_mode);
+
+    if (m_font && old_font)
+        ::SelectObject(dc, old_font);
 }
 
 // WM_PAINT, WM_PRINTCLIENT
@@ -138,124 +148,15 @@ void BaseTextBox_impl::paint_client(HWND hwnd, HDC hDC) {
     RECT client_rect;
     ::GetClientRect(hwnd, &client_rect);
 
-    HGDIOBJ old_font = NULL;
-    if (m_font)
-        old_font = ::SelectObject(dc, m_font);
-
-    m_self->draw_client(hwnd, dc, &client_rect);
-
-    if (m_font && old_font)
-        ::SelectObject(dc, old_font);
+    paint_client_inner(hwnd, dc, &client_rect, hDC ? &client_rect : &ps.rcPaint);
 
     if (!hDC)
         ::EndPaint(hwnd, &ps);
 }
 
-// WM_HSCROLL
-void BaseTextBox_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos) {
-    SCROLLINFO si = { sizeof(si) };
-    si.fMask = SIF_ALL;
-    ::GetScrollInfo(hwnd, SB_HORZ, &si);
-
-    INT nOldPos = si.nPos;
-    switch (code) {
-    case SB_LEFT:
-        si.nPos = si.nMin;
-        break;
-
-    case SB_RIGHT:
-        si.nPos = si.nMax;
-        break;
-
-    case SB_LINELEFT:
-        si.nPos -= m_scroll_step_cx;
-        if (si.nPos < si.nMin)
-            si.nPos = si.nMin;
-        break;
-
-    case SB_LINERIGHT:
-        si.nPos += m_scroll_step_cx;
-        if (si.nPos > si.nMax)
-            si.nPos = si.nMax;
-        break;
-
-    case SB_PAGELEFT:
-        si.nPos -= si.nPage;
-        if (si.nPos < si.nMin)
-            si.nPos = si.nMin;
-        break;
-
-    case SB_PAGERIGHT:
-        si.nPos += si.nPage;
-        if (si.nPos > si.nMax)
-            si.nPos = si.nMax;
-        break;
-
-    case SB_THUMBPOSITION:
-    case SB_THUMBTRACK:
-        si.nPos = pos;
-        break;
-
-    default:
-        break;
-    }
-
-    ::SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-
-    ::InvalidateRect(hwnd, NULL, TRUE);
-}
-
-// WM_VSCROLL
-void BaseTextBox_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos) {
-    SCROLLINFO si = { sizeof(si) };
-    si.fMask = SIF_ALL;
-    ::GetScrollInfo(hwnd, SB_VERT, &si);
-
-    INT nOldPos = si.nPos;
-    switch (code) {
-    case SB_TOP:
-        si.nPos = si.nMin;
-        break;
-
-    case SB_BOTTOM:
-        si.nPos = si.nMax;
-        break;
-
-    case SB_LINEUP:
-        si.nPos -= m_scroll_step_cy;
-        if (si.nPos < si.nMin)
-            si.nPos = si.nMin;
-        break;
-
-    case SB_LINEDOWN:
-        si.nPos += m_scroll_step_cy;
-        if (si.nPos > si.nMax)
-            si.nPos = si.nMax;
-        break;
-
-    case SB_PAGEUP:
-        si.nPos -= si.nPage;
-        if (si.nPos < si.nMin)
-            si.nPos = si.nMin;
-        break;
-
-    case SB_PAGEDOWN:
-        si.nPos += si.nPage;
-        if (si.nPos > si.nMax)
-            si.nPos = si.nMax;
-        break;
-
-    case SB_THUMBPOSITION:
-    case SB_THUMBTRACK:
-        si.nPos = pos;
-        break;
-
-    default:
-        break;
-    }
-
-    ::SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
-    ::InvalidateRect(hwnd, NULL, TRUE);
+// WM_PAINT
+void BaseTextBox_impl::OnPaint(HWND hwnd) {
+    paint_client(hwnd, NULL);    
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -341,8 +242,6 @@ BaseTextBox::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         HANDLE_MSG(hwnd, WM_SETTEXT, m_pimpl->OnSetText);
         HANDLE_MSG(hwnd, WM_GETFONT, m_pimpl->OnGetFont);
         HANDLE_MSG(hwnd, WM_SETFONT, m_pimpl->OnSetFont);
-        HANDLE_MSG(hwnd, WM_HSCROLL, m_pimpl->OnHScroll);
-        HANDLE_MSG(hwnd, WM_VSCROLL, m_pimpl->OnVScroll);
     case WM_ERASEBKGND:
         return TRUE; // Done in m_pimpl->OnPaint
     case WM_PRINTCLIENT:
@@ -352,18 +251,6 @@ BaseTextBox::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     return 0;
-}
-
-void BaseTextBox::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
-    assert(client_rc);
-
-    ::FillRect(dc, client_rc, ::GetSysColorBrush(COLOR_WINDOW));
-
-    INT old_mode = ::SetBkMode(dc, TRANSPARENT);
-    ::SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
-    ::DrawText(dc, m_pimpl->m_text, m_pimpl->m_text_length, client_rc, 
-               DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
-    ::SetBkMode(dc, old_mode);
 }
 
 LPCWSTR BaseTextBox::get_text() const {
