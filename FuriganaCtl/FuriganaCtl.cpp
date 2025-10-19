@@ -156,7 +156,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT f
                     --iEnd;
             }
         } else {
-            if (fCtrl) {
+            if (fCtrl) { // Ctrlが押されている？
                 iStart = iEnd = 0;
             } else if (iStart == iEnd) {
                 if (iEnd > 0) {
@@ -188,7 +188,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT f
                     ++iEnd;
             }
         } else {
-            if (fCtrl) {
+            if (fCtrl) { // Ctrlが押されている？
                 iStart = iEnd = cParts;
             } else if (iStart == iEnd) {
                 if (iEnd < cParts) {
