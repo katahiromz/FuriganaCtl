@@ -63,6 +63,16 @@ LRESULT FuriganaCtl_impl::OnSetColor(INT iColor, COLORREF rgbColor) {
 
     m_colors[iColor] = rgbColor;
     m_color_is_set[iColor] = true;
+    m_self->invalidate();
+    return TRUE;
+}
+
+// FC_SETLINEGAP
+LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
+    if (line_gap < 0)
+        return FALSE;
+    m_doc.m_line_gap = line_gap;
+    m_self->invalidate();
     return TRUE;
 }
 
@@ -211,6 +221,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         return pimpl()->OnSetMargin((RECT *)lParam);
     case FC_SETCOLOR:
         return pimpl()->OnSetColor((INT)wParam, (COLORREF)lParam);
+    case FC_SETLINEGAP:
+        return pimpl()->OnSetLineGap((INT)wParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }

@@ -41,6 +41,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual LRESULT OnSetRubyRatio(INT mul, INT div);
     virtual LRESULT OnSetMargin(LPRECT prc);
     virtual LRESULT OnSetColor(INT iColor, COLORREF rgbColor);
+    virtual LRESULT OnSetLineGap(INT line_gap);
 
     virtual INT HitTest(INT x, INT y);
 };
