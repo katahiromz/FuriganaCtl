@@ -31,6 +31,16 @@ LRESULT FuriganaCtl_impl::OnSetRubyRatio(INT mul, INT div) {
     return FALSE;
 }
 
+// FC_SETMARGIN
+LRESULT FuriganaCtl_impl::OnSetMargin(LPRECT prc) {
+    if (!prc) {
+        SetRect(&m_margin_rect, 2, 2, 2, 2);
+        return TRUE;
+    }
+    m_margin_rect = *prc;
+    return TRUE;
+}
+
 void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!hfont)
         return;
@@ -125,6 +135,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
     case FC_SETRUBYRATIO:
         return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
+    case FC_SETMARGIN:
+        return pimpl()->OnSetMargin((RECT *)lParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }

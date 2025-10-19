@@ -27,6 +27,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags);
     virtual void OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags);
     virtual LRESULT OnSetRubyRatio(INT mul, INT div);
+    virtual LRESULT OnSetMargin(LPRECT prc);
 
     virtual INT HitTest(INT x, INT y);
 };
