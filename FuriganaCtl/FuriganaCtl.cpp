@@ -15,6 +15,8 @@ static inline void out_of_memory() {
     MessageBoxA(NULL, "Out of memory!", "Error", MB_ICONERROR);
 }
 
+static HINSTANCE s_hinstDLL = NULL;
+
 //////////////////////////////////////////////////////////////////////////////
 // FuriganaCtl_impl
 
@@ -94,12 +96,50 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
 }
 
+// WM_GETDLGCODE
+UINT FuriganaCtl_impl::OnGetDlgCode(HWND hwnd, LPMSG lpmsg) {
+    return DLGC_WANTALLKEYS | DLGC_HASSETSEL;
+}
+
 // WM_RBUTTONDOWN
 void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
-    if (fDoubleClick)
-        return;
+    SetFocus(hwnd);
+}
 
-    OnCopy(hwnd);
+LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
+    m_doc.m_selection_start = iStartSel;
+    m_doc.m_selection_end = iEndSel;
+    m_doc.UpdateSelection();
+    m_self->invalidate();
+    return TRUE;
+}
+
+// WM_CONTEXTMENU
+void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UINT yPos) {
+    if (xPos == 0xFFFF && yPos == 0xFFFF) {
+        RECT rc;
+        GetWindowRect(hwnd, &rc);
+        xPos = rc.left;
+        yPos = rc.top;
+    }
+
+    HMENU hMenu = ::LoadMenu(s_hinstDLL, MAKEINTRESOURCE(1));
+    HMENU hSubMenu = ::GetSubMenu(hMenu, 0);
+    if (hSubMenu) {
+        UINT uFlags = TPM_RIGHTBUTTON | TPM_RETURNCMD;
+        INT id = TrackPopupMenu(hSubMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
+        if (id != 0 && id != -1) {
+            switch (id) {
+            case 32766:
+                SelectAll();
+                break;
+            case 32767:
+                OnCopy(hwnd);
+                break;
+            }
+        }
+    }
+    ::DestroyMenu(hMenu);
 }
 
 // WM_COPY
@@ -138,16 +178,19 @@ INT FuriganaCtl_impl::HitTest(INT x, INT y) {
     return m_doc.HitTest(x, y);
 }
 
+static POINT s_ptHit;
+
 // WM_LBUTTONDOWN
 void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
-    if (fDoubleClick)
-        return;
-
+    SetFocus(hwnd);
     SetCapture(hwnd);
 
     INT iPart = HitTest(x, y);
     m_doc.m_selection_start = m_doc.m_selection_end = iPart;
     m_self->invalidate();
+
+    s_ptHit.x = x;
+    s_ptHit.y = y;
 }
 
 // WM_MOUSEMOVE
@@ -167,7 +210,11 @@ void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
         return;
 
     INT iPart = HitTest(x, y);
-    m_doc.m_selection_end = iPart;
+    if (s_ptHit.x != x || s_ptHit.y != y) {
+        m_doc.m_selection_end = iPart;
+    } else {
+        m_doc.m_selection_start = m_doc.m_selection_end = iPart;
+    }
 
     ::ReleaseCapture();
     m_self->invalidate();
@@ -252,9 +299,11 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pimpl()->OnLButtonDown);
         HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
         HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
+        HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pimpl()->OnRButtonDown);
         HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pimpl()->OnSysColorChange);
         HANDLE_MSG(hwnd, WM_COPY, pimpl()->OnCopy);
-        HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pimpl()->OnRButtonDown);
+        HANDLE_MSG(hwnd, WM_CONTEXTMENU, pimpl()->OnContextMenu);
+        HANDLE_MSG(hwnd, WM_GETDLGCODE, pimpl()->OnGetDlgCode);
     case FC_SETRUBYRATIO:
         return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
     case FC_SETMARGIN:
@@ -278,12 +327,14 @@ BOOL WINAPI
 DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
+        s_hinstDLL = hinstDLL;
         OutputDebugStringA("DLL_PROCESS_ATTACH\n");
         FuriganaCtl::register_class(NULL);
         break;
     case DLL_PROCESS_DETACH:
         OutputDebugStringA("DLL_PROCESS_DETACH\n");
         FuriganaCtl::unregister_class(NULL);
+        s_hinstDLL = NULL;
         break;
     }
     return TRUE;
