@@ -20,6 +20,17 @@ static inline void out_of_memory() {
 
 #include "FuriganaCtl_impl.h"
 
+// FC_SETRUBYRATIO
+LRESULT FuriganaCtl_impl::OnSetRubyRatio(INT mul, INT div) {
+    if (mul >= 0 && div > 0)
+    {
+        m_ruby_ratio_mul = mul; // ルビ比率の分子
+        m_ruby_ratio_div = div; // ルビ比率の分母
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!hfont)
         return;
@@ -113,13 +124,7 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
         HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
     case FC_SETRUBYRATIO:
-        if ((INT)wParam >= 0 && (INT)lParam > 0)
-        {
-            pimpl()->m_ruby_ratio_mul = (INT)wParam; // ルビ比率の分子
-            pimpl()->m_ruby_ratio_div = (INT)lParam; // ルビ比率の分母
-            return TRUE;
-        }
-        return FALSE;
+        return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }
