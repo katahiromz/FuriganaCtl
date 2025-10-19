@@ -9,6 +9,7 @@
 #include <windowsx.h>
 #include <new>
 #include <cassert>
+#include "resource.h"
 
 // メモリ不足時のメッセージ
 static inline void out_of_memory() {
@@ -161,10 +162,10 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
     HMENU hSubMenu = ::GetSubMenu(hMenu, 0);
     if (hSubMenu) {
         if (m_doc.m_selection_start == -1 || m_doc.m_selection_start == m_doc.m_selection_end)
-            ::EnableMenuItem(hSubMenu, 32767, MF_GRAYED); // 選択領域がなければコピーを無効化
+            ::EnableMenuItem(hSubMenu, ID_COPY, MF_GRAYED); // 選択領域がなければコピーを無効化
 
         if (m_doc.m_text.empty()) // テキストがなければ
-            ::EnableMenuItem(hSubMenu, 32766, MF_GRAYED); // 「すべて選択」を無効に
+            ::EnableMenuItem(hSubMenu, ID_SELECTALL, MF_GRAYED); // 「すべて選択」を無効に
 
         // TrackPopupMenuの不具合の回避策
         SetForegroundWindow(hwnd);
@@ -173,11 +174,14 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
         INT id = TrackPopupMenu(hSubMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
         if (id != 0 && id != -1) {
             switch (id) {
-            case 32766: // すべて選択
+            case ID_COPY: // コピー
+                OnCopy(hwnd);
+                break;
+            case ID_SELECTALL: // すべて選択
                 SelectAll();
                 break;
-            case 32767: // コピー
-                OnCopy(hwnd);
+            default:
+                assert(0);
                 break;
             }
         }
