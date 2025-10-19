@@ -43,6 +43,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void OnSysColorChange(HWND hwnd);
     virtual void OnCopy(HWND hwnd);
     virtual void OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT flags);
+    virtual void OnMouseWheel(HWND hwnd, int xPos, int yPos, int zDelta, UINT fwKeys);
 
     virtual LRESULT OnSetRubyRatio(INT mul, INT div);
     virtual LRESULT OnSetMargin(LPRECT prc);

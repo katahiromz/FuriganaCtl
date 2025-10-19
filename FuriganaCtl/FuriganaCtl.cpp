@@ -121,14 +121,93 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT f
     if (!fDown)
         return;
 
-    if (GetKeyState(VK_CONTROL) < 0 && vk == 'C') { // Ctrl+C
-        OnCopy(hwnd);
-        return;
+    BOOL fShift = GetKeyState(VK_SHIFT) < 0;
+    BOOL fCtrl = GetKeyState(VK_CONTROL) < 0;
+    INT iStart = m_doc.m_selection_start, iEnd = m_doc.m_selection_end;
+    INT cParts = (INT)m_doc.m_parts.size();
+    switch (vk) {
+    case L'C':
+        if (fCtrl) // Ctrl+C
+            OnCopy(hwnd);
+        break;
+    case 'A':
+        if (fCtrl) // Ctrl+A
+            SelectAll();
+        break;
+    case VK_PRIOR: // PageUp
+        ::PostMessageW(hwnd, WM_VSCROLL, MAKELPARAM(SB_PAGEUP, 0), 0);
+        break;
+    case VK_NEXT: // PageDown
+        ::PostMessageW(hwnd, WM_VSCROLL, MAKELPARAM(SB_PAGEDOWN, 0), 0);
+        break;
+    case VK_HOME: // Home キー
+        fCtrl = TRUE;
+        // FALL THROUGH
+    case VK_LEFT: // ←
+        if (iStart == -1 || iEnd == -1) {
+            m_doc.set_selection(0, 0);
+            break;
+        }
+        if (fShift) { // Shiftが押されている？
+            if (fCtrl) { // Ctrlが押されている？
+                iEnd = 0;
+            } else {
+                if (iEnd > 0)
+                    --iEnd;
+            }
+        } else {
+            if (fCtrl) {
+                iStart = iEnd = 0;
+            } else if (iStart == iEnd) {
+                if (iEnd > 0) {
+                    --iStart;
+                    --iEnd;
+                }
+            } else if (iStart < iEnd) {
+                iEnd = iStart;
+            } else {
+                iStart = iEnd;
+            }
+        }
+        m_doc.set_selection(iStart, iEnd);
+        m_self->invalidate();
+        break;
+    case VK_END: // End キー
+        fCtrl = TRUE;
+        // FALL THROUGH
+    case VK_RIGHT: // →
+        if (iStart == -1 || iEnd == -1) {
+            m_doc.set_selection(cParts, cParts);
+            break;
+        }
+        if (fShift) { // Shiftが押されている？
+            if (fCtrl) { // Ctrlが押されている？
+                iEnd = cParts;
+            } else {
+                if (iEnd < cParts)
+                    ++iEnd;
+            }
+        } else {
+            if (fCtrl) {
+                iStart = iEnd = cParts;
+            } else if (iStart == iEnd) {
+                if (iEnd < cParts) {
+                    ++iStart;
+                    ++iEnd;
+                }
+            } else if (iStart < iEnd) {
+                iStart = iEnd;
+            } else {
+                iEnd = iStart;
+            }
+        }
+        m_doc.set_selection(iStart, iEnd);
+        m_self->invalidate();
+        break;
+    default:
+        break;
     }
-    if (GetKeyState(VK_CONTROL) < 0 && vk == 'A') { // Ctrl+A
-        SelectAll();
-        return;
-    }
+
 }
 
 // WM_GETDLGCODE
@@ -190,6 +269,22 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
         PostMessageW(hwnd, WM_NULL, 0, 0);
     }
     ::DestroyMenu(hMenu);
+}
+
+// WM_MOUSEWHEEL
+void FuriganaCtl_impl::OnMouseWheel(HWND hwnd, int xPos, int yPos, int zDelta, UINT fwKeys)
+{
+    if (::GetKeyState(VK_SHIFT) < 0) {
+        if (zDelta < 0)
+            ::PostMessageW(hwnd, WM_HSCROLL, MAKEWPARAM(SB_LINEDOWN, 0), 0);
+        else if (zDelta > 0)
+            ::PostMessageW(hwnd, WM_HSCROLL, MAKEWPARAM(SB_LINEUP, 0), 0);
+    } else {
+        if (zDelta < 0)
+            ::PostMessageW(hwnd, WM_VSCROLL, MAKEWPARAM(SB_LINEDOWN, 0), 0);
+        else if (zDelta > 0)
+            ::PostMessageW(hwnd, WM_VSCROLL, MAKEWPARAM(SB_LINEUP, 0), 0);
+    }
 }
 
 // WM_COPY
@@ -357,6 +452,7 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pimpl()->OnRButtonDown);
         HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pimpl()->OnSysColorChange);
         HANDLE_MSG(hwnd, WM_COPY, pimpl()->OnCopy);
+        HANDLE_MSG(hwnd, WM_MOUSEWHEEL, pimpl()->OnMouseWheel);
         HANDLE_MSG(hwnd, WM_CONTEXTMENU, pimpl()->OnContextMenu);
         HANDLE_MSG(hwnd, WM_GETDLGCODE, pimpl()->OnGetDlgCode);
         HANDLE_MSG(hwnd, WM_KEYDOWN, pimpl()->OnKey);
