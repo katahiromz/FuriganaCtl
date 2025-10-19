@@ -394,6 +394,11 @@ INT TextDoc::update_runs() {
         m_para_height += run.m_run_height;
     }
 
+    // ラン間の行間を加算する（ランが複数ある場合）
+    if (m_runs.size() > 1) {
+        m_para_height += m_line_gap * (INT)(m_runs.size() - 1);
+    }
+
     return (INT)m_runs.size();
 }
 
@@ -628,6 +633,12 @@ void TextDoc::draw_doc(
     }
 
     m_para_width = max_run_width;
+
+    // 重要: get_ideal_size()/draw_doc(NULL,...) の呼び出しで
+    // m_para_height が正しく更新されるようにする
+    if (!dc) {
+        m_para_height = prc->bottom - prc->top;
+    }
 }
 
 /**
