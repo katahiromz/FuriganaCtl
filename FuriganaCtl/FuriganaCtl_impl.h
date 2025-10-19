@@ -27,6 +27,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     }
 
     void select_all() { OnSetSel(0, -1); }
+    void reset_color(INT iColor);
     void reset_colors();
     UINT get_draw_flags() const;
 

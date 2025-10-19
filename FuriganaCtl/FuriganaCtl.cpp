@@ -38,13 +38,23 @@ static HINSTANCE s_hinst = NULL;
 
 #include "FuriganaCtl_impl.h"
 
+void FuriganaCtl_impl::reset_color(INT iColor) {
+    switch (iColor) {
+    case 0: m_colors[iColor] = ::GetSysColor(COLOR_WINDOWTEXT); break;
+    case 1: m_colors[iColor] = ::GetSysColor(COLOR_WINDOW); break;
+    case 2: m_colors[iColor] = ::GetSysColor(COLOR_HIGHLIGHTTEXT); break;
+    case 3: m_colors[iColor] = ::GetSysColor(COLOR_HIGHLIGHT); break;
+    default:
+        return;
+    }
+    m_color_is_set[iColor] = false;
+}
+
 // 色をリセットする
 void FuriganaCtl_impl::reset_colors() {
-    m_colors[0] = ::GetSysColor(COLOR_WINDOWTEXT);
-    m_colors[1] = ::GetSysColor(COLOR_WINDOW);
-    m_colors[2] = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
-    m_colors[3] = ::GetSysColor(COLOR_HIGHLIGHT);
-    ZeroMemory(m_color_is_set, sizeof(m_color_is_set));
+    for (size_t iColor = 0; iColor < _countof(m_colors); ++iColor) {
+        reset_color((INT)iColor);
+    }
 }
 
 // 無効にして再描画
@@ -93,8 +103,7 @@ UINT FuriganaCtl_impl::get_draw_flags() const {
 
 // FC_SETRUBYRATIO
 LRESULT FuriganaCtl_impl::OnSetRubyRatio(INT mul, INT div) {
-    if (mul >= 0 && div > 0)
-    {
+    if (mul >= 0 && div > 0) {
         m_doc.m_ruby_ratio_mul = mul; // ルビ比率の分子
         m_doc.m_ruby_ratio_div = div; // ルビ比率の分母
         return TRUE;
@@ -118,17 +127,7 @@ LRESULT FuriganaCtl_impl::OnSetColor(INT iColor, COLORREF rgbColor) {
         return FALSE;
 
     if (rgbColor == CLR_INVALID) {
-        COLORREF rgbDefault;
-        switch (iColor) {
-        case 0: rgbDefault = GetSysColor(COLOR_WINDOWTEXT); break;
-        case 1: rgbDefault = GetSysColor(COLOR_WINDOW); break;
-        case 2: rgbDefault = GetSysColor(COLOR_HIGHLIGHTTEXT); break;
-        case 3: rgbDefault = GetSysColor(COLOR_HIGHLIGHT); break;
-        default:
-            assert(0);
-        }
-        m_colors[iColor] = rgbDefault;
-        m_color_is_set[iColor] = false;
+        reset_color(iColor);
         return TRUE;
     }
 
