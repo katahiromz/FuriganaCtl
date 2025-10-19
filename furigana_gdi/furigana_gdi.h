@@ -140,7 +140,8 @@ struct TextDoc {
         LPRECT prc,
         HFONT hBaseFont,
         HFONT hRubyFont,
-        UINT flags);
+        UINT flags,
+        const COLORREF *colors = NULL);
 
 protected:
     void _UpdatePartsHeight(HFONT hBaseFont, HFONT hRubyFont);
@@ -153,7 +154,8 @@ protected:
         LPRECT prc,
         HFONT hBaseFont,
         HFONT hRubyFont,
-        UINT flags);
+        UINT flags,
+        const COLORREF *colors = NULL);
     void _AddPara(const std::wstring& text);
 };
 

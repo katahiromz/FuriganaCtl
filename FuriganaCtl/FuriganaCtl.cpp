@@ -41,6 +41,32 @@ LRESULT FuriganaCtl_impl::OnSetMargin(LPRECT prc) {
     return TRUE;
 }
 
+// FC_SETCOLOR
+LRESULT FuriganaCtl_impl::OnSetColor(INT iColor, COLORREF rgbColor) {
+    if (iColor < 0 || iColor >= 4)
+        return FALSE;
+
+    if (rgbColor == CLR_INVALID) {
+        COLORREF rgbDefault;
+        switch (iColor) {
+        case 0: rgbDefault = GetSysColor(COLOR_WINDOWTEXT); break;
+        case 1: rgbDefault = GetSysColor(COLOR_WINDOW); break;
+        case 2: rgbDefault = GetSysColor(COLOR_HIGHLIGHTTEXT); break;
+        case 3: rgbDefault = GetSysColor(COLOR_HIGHLIGHT); break;
+        default:
+            assert(0);
+        }
+        m_colors[iColor] = rgbDefault;
+        m_color_is_set[iColor] = false;
+        return TRUE;
+    }
+
+    m_colors[iColor] = rgbColor;
+    m_color_is_set[iColor] = true;
+    return TRUE;
+}
+
+// WM_SETFONT
 void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!hfont)
         return;
@@ -64,6 +90,7 @@ INT FuriganaCtl_impl::HitTest(INT x, INT y) {
     return m_doc.HitTest(x, y);
 }
 
+// WM_LBUTTONDOWN
 void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
     if (fDoubleClick)
         return;
@@ -75,6 +102,7 @@ void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y,
     m_self->invalidate();
 }
 
+// WM_MOUSEMOVE
 void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
     if (::GetCapture() != hwnd)
         return;
@@ -85,6 +113,7 @@ void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
     m_self->invalidate();
 }
 
+// WM_LBUTTONUP
 void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
     if (::GetCapture() != hwnd)
         return;
@@ -93,6 +122,16 @@ void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
     m_doc.m_selection_end = iPart;
 
     ::ReleaseCapture();
+    m_self->invalidate();
+}
+
+// WM_SYSCOLORCHANGE
+void FuriganaCtl_impl::OnSysColorChange(HWND hwnd) {
+    INT iColor = 0;
+    if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID); ++iColor;
+    if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID); ++iColor;
+    if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID); ++iColor;
+    if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID);
     m_self->invalidate();
 }
 
@@ -128,24 +167,10 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
     return ::UnregisterClassW(get_class_name(), inst);
 }
 
-LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    switch (uMsg) {
-        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pimpl()->OnLButtonDown);
-        HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
-        HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
-    case FC_SETRUBYRATIO:
-        return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
-    case FC_SETMARGIN:
-        return pimpl()->OnSetMargin((RECT *)lParam);
-    default:
-        return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
-    }
-
-    return 0;
-}
-
 void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
-    FillRect(dc, client_rc, GetSysColorBrush(COLOR_WINDOW));
+    HBRUSH hBrush = ::CreateSolidBrush(pimpl()->m_colors[1]);
+    ::FillRect(dc, client_rc, hBrush);
+    ::DeleteObject(hBrush);
 
     const RECT& margin_rect = pimpl()->m_margin_rect;
     RECT rc = *client_rc;
@@ -164,7 +189,7 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
 
     TextDoc& doc = pimpl()->m_doc;
     doc.UpdateSelection();
-    doc.DrawDoc(dc, &rc, pimpl()->m_font, pimpl()->m_sub_font, flags);
+    doc.DrawDoc(dc, &rc, pimpl()->m_font, pimpl()->m_sub_font, flags, pimpl()->m_colors);
 }
 
 void FuriganaCtl::invalidate() {
@@ -172,6 +197,25 @@ void FuriganaCtl::invalidate() {
     doc.Clear();
     doc.AddText(pimpl()->m_text);
     BaseTextBox::invalidate();
+}
+
+LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pimpl()->OnLButtonDown);
+        HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
+        HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
+        HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pimpl()->OnSysColorChange);
+    case FC_SETRUBYRATIO:
+        return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
+    case FC_SETMARGIN:
+        return pimpl()->OnSetMargin((RECT *)lParam);
+    case FC_SETCOLOR:
+        return pimpl()->OnSetColor((INT)wParam, (COLORREF)lParam);
+    default:
+        return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
+    }
+
+    return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////

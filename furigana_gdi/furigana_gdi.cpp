@@ -22,6 +22,15 @@ static INT get_text_width(HDC dc, LPCWSTR text, INT len) {
     return size.cx;
 }
 
+static const COLORREF *get_default_colors() {
+    static COLORREF s_colors[4];
+    s_colors[0] = GetSysColor(COLOR_WINDOWTEXT);
+    s_colors[1] = GetSysColor(COLOR_WINDOW);
+    s_colors[2] = GetSysColor(COLOR_HIGHLIGHTTEXT);
+    s_colors[3] = GetSysColor(COLOR_HIGHLIGHT);
+    return s_colors;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // TextPart - テキストのパート。
 
@@ -417,8 +426,12 @@ void TextDoc::_DrawRun(
     LPRECT prc,
     HFONT hBaseFont,
     HFONT hRubyFont,
-    UINT flags)
+    UINT flags,
+    const COLORREF *colors)
 {
+    if (!colors)
+        colors = get_default_colors();
+
     if (m_text.length() <= 0 || m_parts.empty()) {
         if (!dc) {
             prc->right = prc->left;
@@ -464,13 +477,16 @@ void TextDoc::_DrawRun(
         // 描画対象の長方形
         RECT rc = { current_x, prc->top, current_x + part.m_part_width, prc->top + run.m_run_height };
 
+        HBRUSH hBrush;
         if (part.m_selected) { // 選択状態か？
-            FillRect(hdc, &rc, GetSysColorBrush(COLOR_HIGHLIGHT));
-            SetTextColor(hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+            SetTextColor(hdc, colors[2]);
+            hBrush = CreateSolidBrush(colors[3]);
         } else {
-            FillRect(hdc, &rc, GetSysColorBrush(COLOR_WINDOW));
-            SetTextColor(hdc, GetSysColor(COLOR_WINDOWTEXT));
+            SetTextColor(hdc, colors[0]);
+            hBrush = CreateSolidBrush(colors[1]);
         }
+        FillRect(hdc, &rc, hBrush);
+        DeleteObject(hBrush);
 
         if (dc && RectVisible(dc, &rc)) { // 描画すべきか？
             switch (part.m_type) {
@@ -546,8 +562,12 @@ void TextDoc::DrawDoc(
     LPRECT prc,
     HFONT hBaseFont,
     HFONT hRubyFont,
-    UINT flags)
+    UINT flags,
+    const COLORREF *colors)
 {
+    if (!colors)
+        colors = get_default_colors();
+
     m_max_width = (flags & DT_SINGLELINE) ? -1 : (prc->right - prc->left);
 
     _UpdateRuns(hBaseFont, hRubyFont);
@@ -564,7 +584,7 @@ void TextDoc::DrawDoc(
         rc.top = current_y;
         rc.bottom = rc.top + run.m_run_height;
         if (dc && RectVisible(dc, &rc))
-            _DrawRun(dc, run, &rc, hBaseFont, hRubyFont, flags);
+            _DrawRun(dc, run, &rc, hBaseFont, hRubyFont, flags, colors);
 
         if (max_run_width < run.m_run_width)
             max_run_width = run.m_run_width;

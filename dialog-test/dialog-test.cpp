@@ -28,6 +28,9 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     RECT margin = { 4, 4, 4, 4 };
     SendMessage(hwndEdt2, FC_SETMARGIN, 0, (LPARAM)&margin);
 
+    SendMessage(hwndEdt2, FC_SETCOLOR, 0, RGB(0, 0, 0));
+    SendMessage(hwndEdt2, FC_SETCOLOR, 1, RGB(255, 255, 0));
+
     bool multi = true;
     DWORD style = GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
     if (multi) style |= ES_MULTILINE;
