@@ -37,6 +37,44 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
 }
 
+INT FuriganaCtl_impl::HitTest(INT x, INT y) {
+    x -= m_margin_rect.left;
+    y -= m_margin_rect.top;
+    return m_doc.HitTest(x, y);
+}
+
+void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
+    if (fDoubleClick)
+        return;
+
+    SetCapture(hwnd);
+
+    INT iPart = HitTest(x, y);
+    m_doc.m_selection_start = m_doc.m_selection_end = iPart;
+    m_self->invalidate();
+}
+
+void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
+    if (::GetCapture() != hwnd)
+        return;
+
+    INT iPart = HitTest(x, y);
+    m_doc.m_selection_end = iPart;
+
+    m_self->invalidate();
+}
+
+void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
+    if (::GetCapture() != hwnd)
+        return;
+
+    INT iPart = HitTest(x, y);
+    m_doc.m_selection_end = iPart;
+
+    ::ReleaseCapture();
+    m_self->invalidate();
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // FuriganaCtl
 
@@ -69,52 +107,11 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
     return ::UnregisterClassW(get_class_name(), inst);
 }
 
-INT FuriganaCtl::HitTest(INT x, INT y) {
-    x -= pimpl()->m_margin_rect.left;
-    y -= pimpl()->m_margin_rect.top;
-    return pimpl()->m_doc.HitTest(x, y);
-}
-
-void FuriganaCtl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags) {
-    if (fDoubleClick)
-        return;
-
-    SetCapture(hwnd);
-
-    TextDoc& doc = pimpl()->m_doc;
-    INT iPart = HitTest(x, y);
-    doc.m_selection_start = doc.m_selection_end = iPart;
-    invalidate();
-}
-
-void FuriganaCtl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
-    if (GetCapture() != hwnd)
-        return;
-    INT iPart = HitTest(x, y);
-    TextDoc& doc = pimpl()->m_doc;
-    doc.m_selection_end = iPart;
-
-    invalidate();
-}
-
-void FuriganaCtl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
-    if (GetCapture() != hwnd)
-        return;
-
-    INT iPart = HitTest(x, y);
-    TextDoc& doc = pimpl()->m_doc;
-    doc.m_selection_end = iPart;
-
-    ReleaseCapture();
-    invalidate();
-}
-
 LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    switch (uMsg)
-    {
-        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, OnLButtonDown);
-        HANDLE_MSG(hwnd, WM_MOUSEMOVE, OnMouseMove);
-        HANDLE_MSG(hwnd, WM_LBUTTONUP, OnLButtonUp);
+    switch (uMsg) {
+        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pimpl()->OnLButtonDown);
+        HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
+        HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
     case FC_SETRUBYRATIO:
         if ((INT)wParam >= 0 && (INT)lParam > 0)
         {

@@ -22,5 +22,10 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
         SetRect(&m_margin_rect, 2, 2, 2, 2);
     }
 
-    void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
+    virtual void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
+    virtual void OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags);
+    virtual void OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags);
+    virtual void OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags);
+
+    virtual INT HitTest(INT x, INT y);
 };
