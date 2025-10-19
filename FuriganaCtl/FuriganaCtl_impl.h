@@ -37,6 +37,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
 
     virtual INT hit_test(INT x, INT y);
     virtual void invalidate();
+    virtual void update_scroll_info();
     virtual void paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect);
 
     virtual void OnSize(HWND hwnd, UINT state, INT cx, INT cy);

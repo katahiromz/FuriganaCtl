@@ -5,9 +5,6 @@
 #include "char_judge.h"
 #include <assert.h>
 
-#undef min
-#undef max
-
 /**
  * テキストの幅を計測する。
  * @param dc 描画するときはデバイスコンテキスト。
@@ -54,7 +51,7 @@ void TextPart::update_width(TextDoc& doc) {
         SelectObject(dc, doc.m_hRubyFont);
         m_ruby_width = get_text_width(dc, &text[m_ruby_index], m_ruby_len);
         // ルビブロックの幅は、ベースとルビの幅の大きい方
-        m_part_width = std::max(m_base_width, m_ruby_width);
+        m_part_width = max(m_base_width, m_ruby_width);
         break;
     case TextPart::NEWLINE:
         m_base_width = 0;

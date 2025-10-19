@@ -57,13 +57,7 @@ void FuriganaCtl_impl::reset_colors() {
     }
 }
 
-// 無効にして再描画
-void FuriganaCtl_impl::invalidate() {
-    if (m_doc.m_text != m_text) {
-        m_doc.clear();
-        m_doc.add_text(m_text);
-    }
-
+void FuriganaCtl_impl::update_scroll_info() {
     RECT rc;
     ::GetClientRect(m_hwnd, &rc);
     rc.left += m_margin_rect.left;
@@ -74,18 +68,38 @@ void FuriganaCtl_impl::invalidate() {
     RECT rcIdeal = rc;
     m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
 
+    // 横スクロール設定: nMax は「コンテンツ幅 - ページ幅」
+    INT pageW = max(0, rc.right - rc.left);
+    INT docW  = max(0, rcIdeal.right - rcIdeal.left);
+    INT maxHorz = max(0, docW - pageW);
+
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_PAGE | SIF_RANGE;
     si.nMin = 0;
-    si.nPage = rc.right - rc.left;
-    si.nMax = rcIdeal.right - rcIdeal.left;
+    si.nPage = pageW;
+    si.nMax = maxHorz;
     ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
+
+    // 縦スクロール設定: nMax は「コンテンツ高さ - ページ高さ」
+    INT pageH = max(0, rc.bottom - rc.top);
+    INT docH  = max(0, rcIdeal.bottom - rcIdeal.top);
+    INT maxVert = max(0, docH - pageH);
 
     si.fMask = SIF_PAGE | SIF_RANGE;
     si.nMin = 0;
-    si.nPage = rc.bottom - rc.top;
-    si.nMax = rcIdeal.bottom - rcIdeal.top;
+    si.nPage = pageH;
+    si.nMax = maxVert;
     ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
+}
+
+// 無効にして再描画
+void FuriganaCtl_impl::invalidate() {
+    if (m_doc.m_text != m_text) {
+        m_doc.clear();
+        m_doc.add_text(m_text);
+    }
+
+    update_scroll_info();
 
     BaseTextBox_impl::invalidate();
 }
@@ -467,6 +481,8 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
 
 // WM_HSCROLL
 void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
+    update_scroll_info();
+
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_ALL;
     ::GetScrollInfo(hwnd, SB_HORZ, &si);
@@ -510,6 +526,8 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
 
 // WM_VSCROLL
 void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
+    update_scroll_info();
+
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_ALL;
     ::GetScrollInfo(hwnd, SB_VERT, &si);
@@ -597,8 +615,7 @@ void FuriganaCtl_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect) 
     rc.right -= m_margin_rect.right;
     rc.bottom -= m_margin_rect.bottom;
 
-    // スクロールを反映するためにビューポート原点を移す（負値）
-    ::SetViewportOrgEx(dc, -m_scroll_x, -m_scroll_y, NULL);
+    OffsetRect(&rc, -m_scroll_x, -m_scroll_y);
 
     // 選択領域を更新
     m_doc.update_selection();
