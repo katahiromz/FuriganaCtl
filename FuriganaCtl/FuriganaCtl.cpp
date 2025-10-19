@@ -38,6 +38,59 @@ static HINSTANCE s_hinst = NULL;
 
 #include "FuriganaCtl_impl.h"
 
+// 色をリセットする
+void FuriganaCtl_impl::reset_colors() {
+    m_colors[0] = ::GetSysColor(COLOR_WINDOWTEXT);
+    m_colors[1] = ::GetSysColor(COLOR_WINDOW);
+    m_colors[2] = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
+    m_colors[3] = ::GetSysColor(COLOR_HIGHLIGHT);
+    ZeroMemory(m_color_is_set, sizeof(m_color_is_set));
+}
+
+// 無効にして再描画
+void FuriganaCtl_impl::invalidate() {
+    if (m_doc.m_text != m_text) {
+        m_doc.clear();
+        m_doc.add_text(m_text);
+    }
+
+    RECT rc;
+    ::GetClientRect(m_hwnd, &rc);
+    rc.left += m_margin_rect.left;
+    rc.top += m_margin_rect.top;
+    rc.right -= m_margin_rect.right;
+    rc.bottom -= m_margin_rect.bottom;
+
+    RECT rcIdeal = rc;
+    m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
+
+    SCROLLINFO si = { sizeof(si) };
+    si.fMask = SIF_PAGE | SIF_RANGE;
+    si.nMin = 0;
+    si.nPage = rc.right - rc.left;
+    si.nMax = rcIdeal.right - rcIdeal.left;
+    ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
+
+    si.fMask = SIF_PAGE | SIF_RANGE;
+    si.nMin = 0;
+    si.nPage = rc.bottom - rc.top;
+    si.nMax = rcIdeal.bottom - rcIdeal.top;
+    ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
+
+    BaseTextBox_impl::invalidate();
+}
+
+// 描画フラグ群を取得
+UINT FuriganaCtl_impl::get_draw_flags() const {
+    DWORD style = (DWORD)GetWindowLongPtrW(m_hwnd, GWL_STYLE);
+
+    UINT flags = 0;
+    if (!(style & ES_MULTILINE)) flags |= DT_SINGLELINE;
+    if (style & ES_CENTER) flags |= DT_CENTER;
+    if (style & ES_RIGHT) flags |= DT_RIGHT;
+    return flags;
+}
+
 // FC_SETRUBYRATIO
 LRESULT FuriganaCtl_impl::OnSetRubyRatio(INT mul, INT div) {
     if (mul >= 0 && div > 0)
@@ -81,7 +134,7 @@ LRESULT FuriganaCtl_impl::OnSetColor(INT iColor, COLORREF rgbColor) {
 
     m_colors[iColor] = rgbColor;
     m_color_is_set[iColor] = true;
-    m_self->invalidate();
+    invalidate();
     return TRUE;
 }
 
@@ -90,7 +143,7 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
     if (line_gap < 0)
         return FALSE;
     m_doc.m_line_gap = line_gap;
-    m_self->invalidate();
+    invalidate();
     return TRUE;
 }
 
@@ -132,7 +185,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT f
         break;
     case 'A':
         if (fCtrl) // Ctrl+A
-            SelectAll();
+            select_all();
         break;
     case VK_PRIOR: // PageUp
         ::PostMessageW(hwnd, WM_VSCROLL, MAKELPARAM(SB_PAGEUP, 0), 0);
@@ -170,7 +223,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT f
             }
         }
         m_doc.set_selection(iStart, iEnd);
-        m_self->invalidate();
+        invalidate();
         break;
     case VK_END: // End キー
         fCtrl = TRUE;
@@ -202,7 +255,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT f
             }
         }
         m_doc.set_selection(iStart, iEnd);
-        m_self->invalidate();
+        invalidate();
         break;
     default:
         break;
@@ -224,7 +277,7 @@ LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
     m_doc.m_selection_start = iStartSel;
     m_doc.m_selection_end = iEndSel;
     m_doc.update_selection();
-    m_self->invalidate();
+    invalidate();
     return TRUE;
 }
 
@@ -257,7 +310,7 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
                 OnCopy(hwnd);
                 break;
             case ID_SELECTALL: // すべて選択
-                SelectAll();
+                select_all();
                 break;
             default:
                 assert(0);
@@ -319,8 +372,8 @@ void FuriganaCtl_impl::OnCopy(HWND hwnd) {
 
 // 当たり判定
 INT FuriganaCtl_impl::hit_test(INT x, INT y) {
-    x -= m_margin_rect.left;
-    y -= m_margin_rect.top;
+    x += ::GetScrollPos(m_hwnd, SB_HORZ) - m_margin_rect.left;
+    y += ::GetScrollPos(m_hwnd, SB_VERT) - m_margin_rect.top;
     return m_doc.hit_test(x, y);
 }
 
@@ -332,7 +385,7 @@ void FuriganaCtl_impl::OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y,
 
     INT iPart = hit_test(x, y);
     m_doc.set_selection(iPart, iPart);
-    m_self->invalidate();
+    invalidate();
 }
 
 // WM_MOUSEMOVE
@@ -345,7 +398,7 @@ void FuriganaCtl_impl::OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags) {
     INT iPart = hit_test(x, y);
     m_doc.set_selection(m_doc.m_selection_start, iPart);
 
-    m_self->invalidate();
+    invalidate();
 }
 
 // WM_LBUTTONUP
@@ -359,7 +412,7 @@ void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags) {
     m_doc.set_selection(m_doc.m_selection_start, iPart);
 
     ::ReleaseCapture();
-    m_self->invalidate();
+    invalidate();
 }
 
 // WM_SYSCOLORCHANGE
@@ -369,7 +422,7 @@ void FuriganaCtl_impl::OnSysColorChange(HWND hwnd) {
     if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID); ++iColor;
     if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID); ++iColor;
     if (!m_color_is_set[iColor]) OnSetColor(iColor, CLR_INVALID);
-    m_self->invalidate();
+    invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -421,26 +474,15 @@ void FuriganaCtl::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     rc.bottom -= margin_rect.bottom;
     IntersectClipRect(dc, rc.left, rc.top, rc.right, rc.bottom);
 
-    DWORD style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    INT xScroll = GetScrollPos(hwnd, SB_HORZ);
+    INT yScroll = GetScrollPos(hwnd, SB_VERT);
+    OffsetRect(&rc, -xScroll, -yScroll);
 
-    DWORD flags = 0;
-    if (!(style & ES_MULTILINE)) flags |= DT_SINGLELINE;
-    if (style & ES_CENTER) flags |= DT_CENTER;
-    if (style & ES_RIGHT) flags |= DT_RIGHT;
+    UINT flags = pimpl()->get_draw_flags();
 
     TextDoc& doc = pimpl()->m_doc;
     doc.update_selection();
     doc.draw_doc(dc, &rc, flags, pimpl()->m_colors);
-}
-
-// 無効にして再描画
-void FuriganaCtl::invalidate() {
-    TextDoc& doc = pimpl()->m_doc;
-    if (doc.m_text != pimpl()->m_text) {
-        doc.clear();
-        doc.add_text(pimpl()->m_text);
-    }
-    BaseTextBox::invalidate();
 }
 
 // 内部ウィンドウ プロシージャ

@@ -63,8 +63,6 @@ public:
     static BOOL register_class(HINSTANCE inst);
     static BOOL unregister_class(HINSTANCE inst);
 
-    virtual void invalidate();
-
 protected:
     friend struct BaseTextBox_impl;
     struct BaseTextBox_impl *m_pimpl;

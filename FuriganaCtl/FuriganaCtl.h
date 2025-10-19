@@ -29,8 +29,6 @@ public:
     static BOOL register_class(HINSTANCE inst);
     static BOOL unregister_class(HINSTANCE inst);
 
-    void invalidate();
-
 protected:
     friend struct FuriganaCtl_impl;
 

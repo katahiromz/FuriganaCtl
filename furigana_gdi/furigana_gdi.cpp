@@ -627,7 +627,7 @@ void TextDoc::draw_doc(
 
     if (!dc) {
         prc->right = prc->left + max_run_width;
-        prc->bottom = prc->top + current_y;
+        prc->bottom = current_y;
     }
 
     m_para_width = max_run_width;
@@ -638,8 +638,8 @@ void TextDoc::draw_doc(
  * @param prc クライアント領域のRECT構造体へのポインタ。関数はサイズを変更する。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_SINGLELINE。
  */
-void TextDoc::get_ideal_size(LPRECT prc, UINT flags, const COLORREF *colors)
+void TextDoc::get_ideal_size(LPRECT prc, UINT flags)
 {
     assert(prc);
-    draw_doc(NULL, prc, flags, colors);
+    draw_doc(NULL, prc, flags, NULL);
 }

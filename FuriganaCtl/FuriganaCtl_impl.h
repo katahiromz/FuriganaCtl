@@ -23,15 +23,15 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
         m_ruby_ratio_div = 5; // ルビ比率の分母
         SetRect(&m_margin_rect, 2, 2, 2, 2);
 
-        m_colors[0] = GetSysColor(COLOR_WINDOWTEXT);
-        m_colors[1] = GetSysColor(COLOR_WINDOW);
-        m_colors[2] = GetSysColor(COLOR_HIGHLIGHTTEXT);
-        m_colors[3] = GetSysColor(COLOR_HIGHLIGHT);
-        m_color_is_set[0] = false;
-        m_color_is_set[1] = false;
-        m_color_is_set[2] = false;
-        m_color_is_set[3] = false;
+        reset_colors();
     }
+
+    void select_all() { OnSetSel(0, -1); }
+    void reset_colors();
+    UINT get_draw_flags() const;
+
+    virtual INT hit_test(INT x, INT y);
+    virtual void invalidate();
 
     virtual void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
     virtual void OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags);
@@ -50,9 +50,4 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual LRESULT OnSetColor(INT iColor, COLORREF rgbColor);
     virtual LRESULT OnSetLineGap(INT line_gap);
     virtual LRESULT OnSetSel(INT iStartSel, INT iEndSel);
-
-    virtual INT hit_test(INT x, INT y);
-    void SelectAll() {
-        OnSetSel(0, -1);
-    }
 };

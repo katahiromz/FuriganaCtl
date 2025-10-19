@@ -18,6 +18,10 @@ static inline void out_of_memory() {
 
 #include "BaseTextBox_impl.h"
 
+void BaseTextBox_impl::invalidate() {
+    ::InvalidateRect(m_hwnd, NULL, FALSE);
+}
+
 // WM_CREATE
 BOOL BaseTextBox_impl::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
     m_hwnd = hwnd;
@@ -65,7 +69,7 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     m_own_font = false;
 
     if (fRedraw)
-        m_self->invalidate();
+        invalidate();
 }
 
 // WM_GETTEXT
@@ -113,7 +117,7 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
 
     lstrcpynW(m_text, lpszText, required_capacity);
     m_text_length = text_len;
-    m_self->invalidate();
+    invalidate();
 }
 
 // WM_PAINT
@@ -145,6 +149,113 @@ void BaseTextBox_impl::paint_client(HWND hwnd, HDC hDC) {
 
     if (!hDC)
         ::EndPaint(hwnd, &ps);
+}
+
+// WM_HSCROLL
+void BaseTextBox_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos) {
+    SCROLLINFO si = { sizeof(si) };
+    si.fMask = SIF_ALL;
+    ::GetScrollInfo(hwnd, SB_HORZ, &si);
+
+    INT nOldPos = si.nPos;
+    switch (code) {
+    case SB_LEFT:
+        si.nPos = si.nMin;
+        break;
+
+    case SB_RIGHT:
+        si.nPos = si.nMax;
+        break;
+
+    case SB_LINELEFT:
+        si.nPos -= m_scroll_step_cx;
+        if (si.nPos < si.nMin)
+            si.nPos = si.nMin;
+        break;
+
+    case SB_LINERIGHT:
+        si.nPos += m_scroll_step_cx;
+        if (si.nPos > si.nMax)
+            si.nPos = si.nMax;
+        break;
+
+    case SB_PAGELEFT:
+        si.nPos -= si.nPage;
+        if (si.nPos < si.nMin)
+            si.nPos = si.nMin;
+        break;
+
+    case SB_PAGERIGHT:
+        si.nPos += si.nPage;
+        if (si.nPos > si.nMax)
+            si.nPos = si.nMax;
+        break;
+
+    case SB_THUMBPOSITION:
+    case SB_THUMBTRACK:
+        si.nPos = pos;
+        break;
+
+    default:
+        break;
+    }
+
+    ::SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+
+    ::InvalidateRect(hwnd, NULL, TRUE);
+}
+
+// WM_VSCROLL
+void BaseTextBox_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos) {
+    SCROLLINFO si = { sizeof(si) };
+    si.fMask = SIF_ALL;
+    ::GetScrollInfo(hwnd, SB_VERT, &si);
+
+    INT nOldPos = si.nPos;
+    switch (code) {
+    case SB_TOP:
+        si.nPos = si.nMin;
+        break;
+
+    case SB_BOTTOM:
+        si.nPos = si.nMax;
+        break;
+
+    case SB_LINEUP:
+        si.nPos -= m_scroll_step_cy;
+        if (si.nPos < si.nMin)
+            si.nPos = si.nMin;
+        break;
+
+    case SB_LINEDOWN:
+        si.nPos += m_scroll_step_cy;
+        if (si.nPos > si.nMax)
+            si.nPos = si.nMax;
+        break;
+
+    case SB_PAGEUP:
+        si.nPos -= si.nPage;
+        if (si.nPos < si.nMin)
+            si.nPos = si.nMin;
+        break;
+
+    case SB_PAGEDOWN:
+        si.nPos += si.nPage;
+        if (si.nPos > si.nMax)
+            si.nPos = si.nMax;
+        break;
+
+    case SB_THUMBPOSITION:
+    case SB_THUMBTRACK:
+        si.nPos = pos;
+        break;
+
+    default:
+        break;
+    }
+
+    ::SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+    ::InvalidateRect(hwnd, NULL, TRUE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -230,6 +341,8 @@ BaseTextBox::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         HANDLE_MSG(hwnd, WM_SETTEXT, m_pimpl->OnSetText);
         HANDLE_MSG(hwnd, WM_GETFONT, m_pimpl->OnGetFont);
         HANDLE_MSG(hwnd, WM_SETFONT, m_pimpl->OnSetFont);
+        HANDLE_MSG(hwnd, WM_HSCROLL, m_pimpl->OnHScroll);
+        HANDLE_MSG(hwnd, WM_VSCROLL, m_pimpl->OnVScroll);
     case WM_ERASEBKGND:
         return TRUE; // Done in m_pimpl->OnPaint
     case WM_PRINTCLIENT:
@@ -251,10 +364,6 @@ void BaseTextBox::draw_client(HWND hwnd, HDC dc, RECT *client_rc) {
     ::DrawText(dc, m_pimpl->m_text, m_pimpl->m_text_length, client_rc, 
                DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
     ::SetBkMode(dc, old_mode);
-}
-
-void BaseTextBox::invalidate() {
-    ::InvalidateRect(m_pimpl->m_hwnd, NULL, FALSE);
 }
 
 LPCWSTR BaseTextBox::get_text() const {

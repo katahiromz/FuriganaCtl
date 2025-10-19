@@ -142,7 +142,7 @@ struct TextDoc {
     INT hit_test(INT x, INT y);
 
     void draw_doc(HDC dc, LPRECT prc, UINT flags, const COLORREF *colors = NULL);
-    void get_ideal_size(LPRECT prc, UINT flags, const COLORREF *colors = NULL);
+    void get_ideal_size(LPRECT prc, UINT flags);
 
 protected:
     void _update_parts_height();
