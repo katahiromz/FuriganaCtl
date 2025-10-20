@@ -2,7 +2,7 @@
 
 **`FuriganaCtl`** は、Windows GDI 上で動作する「ルビ付きテキスト表示コントロール」です。  
 禁則処理・英単語単位のワードラップ・スクロール・選択・コピー・フォントサイズ比の制御などをサポートします。  
-純粋な Win32 API 環境で動作し、C++03 でもビルド可能です。
+純粋な Win32 環境で動作し、C++03 でもビルド可能です。
 
 ![スクリーンショット](img/screenshot.png "スクリーンショット")
 
@@ -10,10 +10,9 @@
 
 - **名前:** `FuriganaCtl`
 - **目的:** ルビ（ふりがな）付きテキストを美しく表示する Win32 コントロール
-- **開発環境:** C++ / Win32 API / GDI
+- **開発環境:** C++/Win32
 - **ビルド:** CMake + MinGW または MSVC
 - **ライセンス:** MIT License
-- **作者:** katahiromz
 
 ## 主な特徴
 
@@ -30,23 +29,9 @@
 | **キーボード操作**     | 矢印キー、PageUp/PageDown、Home/End、Ctrl+A 対応              |
 | **軽量・依存なし**     | GDI と Win32 API のみ使用、MFC・ATL不要                       |
 
-## ファイル構成
-
-```
-furigana_ctl/
-├── FuriganaCtl.cpp          // コントロール本体
-├── FuriganaCtl_impl.h       // 内部実装構造体
-├── FuriganaCtl.h            // パブリックAPI定義
-├── furigana_api.h           // 独自メッセージ定義 (FC_xxx)
-├── ../furigana_gdi/         // ルビ付き描画エンジン
-│   ├── furigana_gdi.cpp
-│   └── furigana_gdi.h
-└── resource.h               // メニュー・定数定義
-```
-
 ## 使用方法
 
-### 1. ライブラリを読み込む
+### 1. DLLを読み込む
 
 ```cpp
 LoadLibraryA("FuriganaCtl.dll");
@@ -74,7 +59,7 @@ HWND hwndFurigana = CreateWindowW(
 
 | 定数              | WPARAM               | LPARAM                          | 説明                                                        |
 | ----------------- | -------------------- | ------------------------------- | ----------------------------------------------------------- |
-| `FC_SETRUBYRATIO` | 分子                 | 分母                            | ルビ倍率設定 (0 < 分子 / 分母 <= 1)                         |
+| `FC_SETRUBYRATIO` | 分子                 | 分母                            | ルビ倍率設定 (0 < 分子 / 分母 ≦ 1)                         |
 | `FC_SETMARGIN`    | 0                    | LPRECT                          | 余白設定（NULLでデフォルトに戻す）                          |
 | `FC_SETCOLOR`     | 色インデックス(0-3)  | `COLORREF` または `CLR_INVALID` | 色の設定／リセット                                          |
 | `FC_GETIDEALSIZE` | 0=枠付き, 1=内容のみ | LPRECT                          | 理想的な描画サイズを取得                                    |
