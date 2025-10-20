@@ -176,11 +176,14 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!m_sub_font) {
         OutputDebugStringA("CreateFontIndirect failed!\n");
         m_own_sub_font = false;
-        return;
-    }
 
-    m_doc.m_hBaseFont = m_font; // 弱い参照
-    m_doc.m_hRubyFont = m_sub_font; // 弱い参照
+        // フォールバック：ベースフォントを使用
+        m_doc.m_hBaseFont = m_font;
+        m_doc.m_hRubyFont = m_font; // ← ベースフォントを代用
+    } else {
+        m_doc.m_hBaseFont = m_font; // 弱い参照
+        m_doc.m_hRubyFont = m_sub_font; // 弱い参照
+    }
 
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
 }
@@ -798,13 +801,19 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
         nPos = max(si.nMin, nPos - m_scroll_step_x);
         break;
     case SB_LINERIGHT:
-        nPos = min(INT(max(0, si.nMax - (INT)si.nPage)), nPos + m_scroll_step_x);
+        {
+            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
+            nPos = min(maxPos, nPos + m_scroll_step_x);
+        }
         break;
     case SB_PAGELEFT:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
         break;
     case SB_PAGERIGHT:
-        nPos = min(INT(si.nMax - si.nPage), nPos + (INT)si.nPage);
+        {
+            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
+            nPos = min(maxPos, nPos + (INT)si.nPage);
+        }
         break;
     case SB_THUMBTRACK:
     case SB_THUMBPOSITION:
@@ -843,13 +852,19 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
         nPos = max(si.nMin, nPos - m_scroll_step_y);
         break;
     case SB_LINEDOWN:
-        nPos = min(INT(max(0, si.nMax - (INT)si.nPage)), nPos + m_scroll_step_y);
+        {
+            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
+            nPos = min(maxPos, nPos + m_scroll_step_y);
+        }
         break;
     case SB_PAGEUP:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
         break;
     case SB_PAGEDOWN:
-        nPos = min(INT(si.nMax - si.nPage), nPos + (INT)si.nPage);
+        {
+            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
+            nPos = min(maxPos, nPos + (INT)si.nPage);
+        }
         break;
     case SB_THUMBTRACK:
     case SB_THUMBPOSITION:
@@ -888,17 +903,23 @@ void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     assert(cx > 0 && cy > 0);
 
     // メモリDCの作成（ダブルバッファ）
-    HDC memDC = CreateCompatibleDC(dc);
-    HBITMAP hbm = CreateCompatibleBitmap(dc, cx, cy);
-    HGDIOBJ oldBmp = SelectObject(memDC, hbm);
+    HDC memDC = CreateCompatibleDC(dc); // DC作成
+    assert(memDC);
+    HBITMAP hbm = CreateCompatibleBitmap(dc, cx, cy); // ビットマップ作成
+    assert(hbm);
+    HGDIOBJ oldBmp = SelectObject(memDC, hbm); // ビットマップ選択
+    if (oldBmp) {
+        // 内部描画
+        paint_inner(hwnd, memDC, &rcClient);
 
-    paint_inner(hwnd, memDC, &rcClient);
+        // ビットブロットで画面へ転送
+        BitBlt(dc, 0, 0, cx, cy, memDC, 0, 0, SRCCOPY);
 
-    // ビットブロットで画面へ転送
-    BitBlt(dc, 0, 0, cx, cy, memDC, 0, 0, SRCCOPY);
+        // 選択解除
+        SelectObject(memDC, oldBmp);
+    }
 
     // 後片付け
-    SelectObject(memDC, oldBmp);
     DeleteObject(hbm);
     DeleteDC(memDC);
 
@@ -937,7 +958,6 @@ void FuriganaCtl_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
 IMPLEMENT_DYNAMIC(FuriganaCtl);
 
 FuriganaCtl::FuriganaCtl() {
-    delete m_pimpl;
     m_pimpl = new FuriganaCtl_impl(this);
     if (!m_pimpl) {
         out_of_memory();
