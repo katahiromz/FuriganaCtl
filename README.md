@@ -90,7 +90,7 @@ SetWindowTextW(hwndFurigana, L"志(こころざし)を持(も)って漢字(か�
 **`katahiromz`**
 
 * Twitter: [`@katahiromz`](https://twitter.com/katahiromz)
-* Blog: [https://katahiromz.fc2.page/](https://katahiromz.fc2.page/)
+* Blog: [`https://katahiromz.fc2.page/`](https://katahiromz.fc2.page/)
 
 ---
 Copyright &copy; 2025 katahiromz
