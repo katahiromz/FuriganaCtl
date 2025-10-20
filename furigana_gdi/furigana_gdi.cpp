@@ -404,6 +404,8 @@ INT TextDoc::hit_test(INT x, INT y) {
     if (m_runs.empty())
         update_runs();
 
+    if (y < 0) return 0;
+
     // 垂直方向
     INT current_y = 0;
     size_t iRun;
