@@ -31,7 +31,9 @@ static const COLORREF *get_default_colors() {
 /////////////////////////////////////////////////////////////////////////////
 // 禁則処理ヘルパー（C++03対応）
 
-#ifndef NO_KINSOKU
+//#define NO_KINSOKU
+
+#ifndef NO_KINSOKU // 禁則処理をするか？
 
 static bool is_kinsoku_head(wchar_t ch)
 {
@@ -168,7 +170,7 @@ void TextRun::update_width(TextDoc& doc) {
 // TextDoc
 
 /**
- * 「汚い」フラグを立てる。このフラグが立っているときは、update_run()が必要。
+ * 「汚い」フラグを立てる。このフラグが立っているときは、update_runs()が必要。
  */
 void TextDoc::set_dirty() {
     m_layout_dirty = true;
@@ -543,21 +545,107 @@ INT TextDoc::update_runs() {
         TextPart& part = m_parts[iPart];
         INT part_width = part.m_part_width;
 
-        // 最大幅を超えたら、折り返し。
-        // TODO: 禁則処理
-        bool wrap = (m_max_width > 0 && current_x + part_width > m_max_width);
-        if (part.m_text == L"\n" || (wrap && current_x != 0)) {
-            // ランを追加
+        // 改行文字は必ず区切り
+        if (part.m_text == L"\n") {
             TextRun run;
             run.m_part_index_start = iPart0;
             run.m_part_index_end = iPart;
             run.m_run_width = run_width;
             m_runs.push_back(run);
 
-            iPart0 = iPart + (part.m_text == L"\n");
+            // 次パートは改行の次から開始
+            iPart0 = iPart + 1;
             current_x = run_width = 0;
+            continue;
         }
 
+        // 折り返しが必要か？
+        bool wrap = (m_max_width > 0 && current_x + part_width > m_max_width);
+
+        if (wrap && current_x != 0) {
+            // 直前パート末尾文字 / 現パート先頭文字（C++03 対応）
+            wchar_t prevCh = 0;
+            wchar_t nextCh = 0;
+            if (iPart > 0) {
+                const std::wstring &prevText = m_parts[iPart - 1].m_text;
+                if (!prevText.empty())
+                    prevCh = prevText[prevText.size() - 1];
+            }
+            if (!part.m_text.empty())
+                nextCh = part.m_text[0];
+
+            bool handled = false;
+
+#ifndef NO_KINSOKU // 禁則処理をするか？
+            // (1) 次が行頭禁則文字なら -> 現行の末尾1パートを次行へ移す試み
+            if (is_kinsoku_head(nextCh)) {
+                // 現行に少なくとも2パートある（1つしかないと移動で空行になる）
+                if ((INT)(iPart - iPart0) >= 2) {
+                    INT lastIdx = iPart - 1;
+                    INT lastWidth = m_parts[lastIdx].m_part_width;
+                    INT new_curr_run_width = run_width - lastWidth; // 現行幅から末尾を除く
+                    INT next_line_width = lastWidth + part_width;   // 次行に入る幅（末尾 + 今のパート）
+
+                    // 移動後も次行幅が m_max_width を超えないか確認
+                    if (next_line_width <= m_max_width) {
+                        // 現行を末尾を除いて確定
+                        TextRun run;
+                        run.m_part_index_start = iPart0;
+                        run.m_part_index_end = lastIdx; // exclusive
+                        run.m_run_width = new_curr_run_width;
+                        m_runs.push_back(run);
+
+                        // 次行の開始位置を lastIdx にして、current_x/run_width を lastWidth にする
+                        iPart0 = lastIdx;
+                        current_x = run_width = lastWidth;
+
+                        // iPart をデクリメントして（for の ++で元の iPart を再処理）
+                        iPart = lastIdx - 1;
+                        handled = true;
+                    }
+                }
+            }
+
+            // (2) 直前が行末禁則文字なら -> 同様に末尾1パートを次行へ移す試み
+            if (!handled && is_kinsoku_tail(prevCh)) {
+                if ((INT)(iPart - iPart0) >= 2) {
+                    INT lastIdx = iPart - 1;
+                    INT lastWidth = m_parts[lastIdx].m_part_width;
+                    INT new_curr_run_width = run_width - lastWidth;
+                    INT next_line_width = lastWidth + part_width;
+
+                    if (next_line_width <= m_max_width) {
+                        TextRun run;
+                        run.m_part_index_start = iPart0;
+                        run.m_part_index_end = lastIdx;
+                        run.m_run_width = new_curr_run_width;
+                        m_runs.push_back(run);
+
+                        iPart0 = lastIdx;
+                        current_x = run_width = lastWidth;
+                        iPart = lastIdx - 1;
+                        handled = true;
+                    }
+                }
+            }
+#endif // ndef NO_KINSOKU
+
+            if (!handled) {
+                // 移動できなければ通常の改行（この場合、次行の先頭が禁則文字になる可能性あり）
+                TextRun run;
+                run.m_part_index_start = iPart0;
+                run.m_part_index_end = iPart;
+                run.m_run_width = run_width;
+                m_runs.push_back(run);
+
+                iPart0 = iPart;
+                current_x = run_width = 0;
+                // 続行して現在の part を次行で処理する（for の ++ により iPart が増えるが現在は処理済み、
+                // ここでは continue せず loop 続行で current_x が 0 の状態で次へ積む）
+            }
+        }
+
+        // 通常は現在のパートを現在のランへ追加
         current_x += part_width;
         run_width += part_width;
     }
