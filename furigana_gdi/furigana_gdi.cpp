@@ -28,6 +28,28 @@ static const COLORREF *get_default_colors() {
     return s_colors;
 }
 
+/**
+ * テキストを分割する。
+ * @param container コンテナ。
+ * @param str テキスト文字列。
+ * @param chars 分割の区切り文字の集合。
+ */
+inline void
+mstr_split(std::vector<std::wstring>& container,
+           const std::wstring& str,
+           const std::wstring& chars)
+{
+    container.clear();
+    size_t i = 0, k = str.find_first_of(chars);
+    while (k != std::wstring::npos)
+    {
+        container.push_back(str.substr(i, k - i));
+        i = k + 1;
+        k = str.find_first_of(chars, i);
+    }
+    container.push_back(str.substr(i));
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // TextPart - テキストのパート。
 
@@ -280,28 +302,6 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
     ppt->x = 0;
     ppt->y = current_y;
     return true;
-}
-
-/**
- * テキストを分割する。
- * @param container コンテナ。
- * @param str テキスト文字列。
- * @param chars 分割の区切り文字の集合。
- */
-inline void
-mstr_split(std::vector<std::wstring>& container,
-           const std::wstring& str,
-           const std::wstring& chars)
-{
-    container.clear();
-    size_t i = 0, k = str.find_first_of(chars);
-    while (k != std::wstring::npos)
-    {
-        container.push_back(str.substr(i, k - i));
-        i = k + 1;
-        k = str.find_first_of(chars, i);
-    }
-    container.push_back(str.substr(i));
 }
 
 /**
