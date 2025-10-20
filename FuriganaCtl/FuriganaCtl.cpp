@@ -901,7 +901,10 @@ void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     GetClientRect(hwnd, &rcClient);
     INT cx = rcClient.right - rcClient.left;
     INT cy = rcClient.bottom - rcClient.top;
-    assert(cx > 0 && cy > 0);
+    if (cx <= 0 || cy <= 0) {
+        ::EndPaint(hwnd, &ps);
+        return;
+    }
 
     // メモリDCの作成（ダブルバッファ）
     HDC memDC = ::CreateCompatibleDC(dc); // DC作成
@@ -1000,28 +1003,32 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
 
 // 内部ウィンドウ プロシージャ
 LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    FuriganaCtl_impl *pImpl = pimpl();
+    if (!pImpl) {
+        return 0;
+    }
     switch (uMsg) {
-        HANDLE_MSG(hwnd, WM_PAINT, pimpl()->OnPaint);
-        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pimpl()->OnLButtonDown);
-        HANDLE_MSG(hwnd, WM_MOUSEMOVE, pimpl()->OnMouseMove);
-        HANDLE_MSG(hwnd, WM_LBUTTONUP, pimpl()->OnLButtonUp);
-        HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pimpl()->OnRButtonDown);
-        HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pimpl()->OnSysColorChange);
-        HANDLE_MSG(hwnd, WM_COPY, pimpl()->OnCopy);
-        HANDLE_MSG(hwnd, WM_MOUSEWHEEL, pimpl()->OnMouseWheel);
-        HANDLE_MSG(hwnd, WM_CONTEXTMENU, pimpl()->OnContextMenu);
-        HANDLE_MSG(hwnd, WM_GETDLGCODE, pimpl()->OnGetDlgCode);
-        HANDLE_MSG(hwnd, WM_KEYDOWN, pimpl()->OnKey);
-        HANDLE_MSG(hwnd, WM_HSCROLL, pimpl()->OnHScroll);
-        HANDLE_MSG(hwnd, WM_VSCROLL, pimpl()->OnVScroll);
+        HANDLE_MSG(hwnd, WM_PAINT, pImpl->OnPaint);
+        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pImpl->OnLButtonDown);
+        HANDLE_MSG(hwnd, WM_MOUSEMOVE, pImpl->OnMouseMove);
+        HANDLE_MSG(hwnd, WM_LBUTTONUP, pImpl->OnLButtonUp);
+        HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pImpl->OnRButtonDown);
+        HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pImpl->OnSysColorChange);
+        HANDLE_MSG(hwnd, WM_COPY, pImpl->OnCopy);
+        HANDLE_MSG(hwnd, WM_MOUSEWHEEL, pImpl->OnMouseWheel);
+        HANDLE_MSG(hwnd, WM_CONTEXTMENU, pImpl->OnContextMenu);
+        HANDLE_MSG(hwnd, WM_GETDLGCODE, pImpl->OnGetDlgCode);
+        HANDLE_MSG(hwnd, WM_KEYDOWN, pImpl->OnKey);
+        HANDLE_MSG(hwnd, WM_HSCROLL, pImpl->OnHScroll);
+        HANDLE_MSG(hwnd, WM_VSCROLL, pImpl->OnVScroll);
     case FC_SETRUBYRATIO:
-        return pimpl()->OnSetRubyRatio((INT)wParam, (INT)lParam);
+        return pImpl->OnSetRubyRatio((INT)wParam, (INT)lParam);
     case FC_SETMARGIN:
-        return pimpl()->OnSetMargin((RECT *)lParam);
+        return pImpl->OnSetMargin((RECT *)lParam);
     case FC_SETCOLOR:
-        return pimpl()->OnSetColor((INT)wParam, (COLORREF)lParam);
+        return pImpl->OnSetColor((INT)wParam, (COLORREF)lParam);
     case FC_SETLINEGAP:
-        return pimpl()->OnSetLineGap((INT)wParam);
+        return pImpl->OnSetLineGap((INT)wParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }

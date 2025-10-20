@@ -33,6 +33,12 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
         SetRect(&m_margin_rect, 2, 2, 2, 2);
         reset_colors();
     }
+    ~FuriganaCtl_impl() {
+        if (m_own_sub_font && m_sub_font) {
+            ::DeleteObject(m_sub_font);
+            m_sub_font = NULL;
+        }
+    }
 
     void select_all() { OnSetSel(0, -1); }
     void reset_color(INT iColor);
