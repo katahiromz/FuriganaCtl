@@ -491,16 +491,16 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     INT nPos = si.nPos;
     switch (code) {
     case SB_LINELEFT:
-        nPos = max(si.nMin, nPos - 1);
+        nPos = max(si.nMin, nPos - m_scroll_step_x);
         break;
     case SB_LINERIGHT:
-        nPos = min(si.nMax, nPos + 1);
+        nPos = min(INT(si.nMax - si.nPage), nPos + m_scroll_step_x);
         break;
     case SB_PAGELEFT:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
         break;
     case SB_PAGERIGHT:
-        nPos = min(si.nMax, nPos + (INT)si.nPage);
+        nPos = min(INT(si.nMax - si.nPage), nPos + (INT)si.nPage);
         break;
     case SB_THUMBTRACK:
     case SB_THUMBPOSITION:
@@ -536,16 +536,16 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     INT nPos = si.nPos;
     switch (code) {
     case SB_LINEUP:
-        nPos = max(si.nMin, nPos - 1);
+        nPos = max(si.nMin, nPos - m_scroll_step_y);
         break;
     case SB_LINEDOWN:
-        nPos = min(si.nMax, nPos + 1);
+        nPos = min(INT(si.nMax - si.nPage), nPos + m_scroll_step_y);
         break;
     case SB_PAGEUP:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
         break;
     case SB_PAGEDOWN:
-        nPos = min(si.nMax, nPos + (INT)si.nPage);
+        nPos = min(INT(si.nMax - si.nPage), nPos + (INT)si.nPage);
         break;
     case SB_THUMBTRACK:
     case SB_THUMBPOSITION:

@@ -84,7 +84,7 @@ INT BaseTextBox_impl::OnGetText(HWND hwnd, INT cchTextMax, LPTSTR lpszText) {
 
 // WM_GETTEXTLENGTH
 INT BaseTextBox_impl::OnGetTextLength(HWND hwnd) {
-    return lstrlenW(m_text);
+    return m_text_length;
 }
 
 // WM_SETTEXT

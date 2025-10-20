@@ -80,9 +80,14 @@ void OnCommand(HWND hwnd, INT id, HWND hwndCtl, UINT codeNotify)
         break;
     case edt1:
         {
-            TCHAR text[512];
-            GetDlgItemText(hwnd, edt1, text, _countof(text));
-            SetDlgItemText(hwnd, edt2, text);
+            INT text_len = GetWindowTextLength(GetDlgItem(hwnd, edt1));
+            SIZE_T cbText = (text_len + 1) * sizeof(TCHAR);
+            LPTSTR text = (LPTSTR)malloc(cbText);
+            if (text) {
+                GetDlgItemText(hwnd, edt1, text, text_len + 1);
+                SetDlgItemText(hwnd, edt2, text);
+                free(text);
+            }
         }
         break;
     }
