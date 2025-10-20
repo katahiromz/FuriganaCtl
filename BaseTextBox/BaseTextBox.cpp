@@ -8,11 +8,6 @@
 #include <new>
 #include <cassert>
 
-static inline void out_of_memory() {
-    OutputDebugStringA("Out of memory!\n");
-    MessageBoxA(NULL, "Out of memory!", "Error", MB_ICONERROR);
-}
-
 //////////////////////////////////////////////////////////////////////////////
 // BaseTextBox_impl
 
@@ -139,9 +134,10 @@ void BaseTextBox_impl::OnPaint(HWND hwnd) {
 IMPLEMENT_DYNAMIC(BaseTextBox);
 
 BaseTextBox::BaseTextBox() {
-    m_pimpl = new BaseTextBox_impl(this);
+    m_pimpl = new(std::nothrow) BaseTextBox_impl(this);
     if (!m_pimpl) {
-        out_of_memory();
+        OutputDebugStringA("Out of memory\n");
+        assert(0);
     }
 }
 

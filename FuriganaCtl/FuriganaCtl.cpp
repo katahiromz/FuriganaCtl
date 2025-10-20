@@ -11,12 +11,6 @@
 #include <cassert>
 #include "resource.h"
 
-// メモリ不足時のメッセージ
-static inline void out_of_memory() {
-    OutputDebugStringA("Out of memory!\n");
-    MessageBoxA(NULL, "Out of memory!", "Error", MB_ICONERROR);
-}
-
 // デバッグ出力
 static inline void DPRINTF(LPCWSTR fmt, ...) {
 #ifndef NDEBUG
@@ -977,7 +971,8 @@ IMPLEMENT_DYNAMIC(FuriganaCtl);
 FuriganaCtl::FuriganaCtl() {
     m_pimpl = new(std::nothrow) FuriganaCtl_impl(this);
     if (!m_pimpl) {
-        out_of_memory();
+        OutputDebugStringA("Out of memory!\n");
+        assert(0);
     }
 }
 
