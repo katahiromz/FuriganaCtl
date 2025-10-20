@@ -7,7 +7,7 @@
 
 /**
  * テキストの幅を計測する。
- * @param dc 描画するときはデバイスコンテキスト。
+ * @param dc デバイスコンテキスト。
  * @param text テキスト。
  * @param len テキストの長さ。
  * @return テキストの幅。
@@ -243,6 +243,26 @@ mstr_split(T_STR_CONTAINER& container,
 }
 
 /**
+ * 選択位置を設定する。
+ * @param iStart パートの開始インデックス。
+ * @param iEnd パートの終了インデックス。
+ */
+void TextDoc::set_selection(INT iStart, INT iEnd) {
+    m_selection_start = iStart;
+    m_selection_end = iEnd;
+}
+
+/**
+ * 文書をクリアする。
+ */
+void TextDoc::clear() {
+    m_text.clear();
+    m_parts.clear();
+    m_runs.clear();
+    m_paras.clear();
+}
+
+/**
  * テキストを追加する。
  * @param text テキスト文字列。
  */
@@ -344,7 +364,35 @@ INT TextDoc::hit_test(INT x, INT y) {
 }
 
 /**
- * 0個以上のランをする。
+ * 選択テキストを取得する。
+ * @return 取得したテキスト文字列。
+ */
+std::wstring TextDoc::get_selection_text() {
+    std::vector<TextPart>& parts = m_parts;
+    INT iStart = m_selection_start;
+    INT iEnd = m_selection_end;
+    if (iStart == -1) {
+        return L"";
+    } else {
+        if (iEnd == -1)
+            iEnd = (INT)parts.size();
+
+        if (iStart > iEnd)
+            std::swap(iStart, iEnd);
+
+        std::wstring text;
+        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
+            if (iStart <= (INT)iPart && (INT)iPart < iEnd) {
+                TextPart& part = parts[iPart];
+                text += m_text.substr(part.m_base_index, part.m_base_len);
+            }
+        }
+        return text;
+    }
+}
+
+/**
+ * 0個以上のランを更新する。
  * @return 入植したランの個数。
  */
 INT TextDoc::update_runs() {
@@ -403,59 +451,16 @@ INT TextDoc::update_runs() {
 }
 
 /**
- * 選択位置を設定する。
- * @param iStart パートの開始インデックス。
- * @param iEnd パートの終了インデックス。
- */
-void TextDoc::set_selection(INT iStart, INT iEnd) {
-    m_selection_start = iStart;
-    m_selection_end = iEnd;
-}
-
-/**
- * 選択テキストを取得する。
- * @return 取得したテキスト文字列。
- */
-std::wstring TextDoc::get_selection_text() {
-    std::vector<TextPart>& parts = m_parts;
-    INT iStart = m_selection_start;
-    INT iEnd = m_selection_end;
-    if (iStart == -1) {
-        return L"";
-    } else {
-        if (iEnd == -1)
-            iEnd = (INT)parts.size();
-
-        if (iStart > iEnd)
-            std::swap(iStart, iEnd);
-
-        std::wstring text;
-        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-            if (iStart <= (INT)iPart && (INT)iPart < iEnd) {
-                TextPart& part = parts[iPart];
-                text += m_text.substr(part.m_base_index, part.m_base_len);
-            }
-        }
-        return text;
-    }
-}
-
-/**
- * 文書をクリアする。
- */
-void TextDoc::clear() {
-    m_text.clear();
-    m_parts.clear();
-    m_runs.clear();
-    m_paras.clear();
-}
-
-/**
  * 1個のランを描画する。
  * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
- * @param run 描画したいラン。
+ * @param run ラン。
  * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_SINGLELINE。
+ *
+ * 最適化ポイント:
+ * - 計測時はメンバの m_dc を使い、Create/DeleteDC を繰り返さない。
+ * - 描画で使うブラシは再利用する（各パートで都度 Create/Delete しない）。
+ * - 計測パスでは描画呼び出し（FillRect / ExtTextOut 等）をスキップする。
  */
 void TextDoc::_draw_run(
     HDC dc,
@@ -477,20 +482,19 @@ void TextDoc::_draw_run(
         return;
     }
 
-    // dcがNULLの場合、計測用に画面のHDCを使用する
-    HDC hdc = dc ? dc : CreateCompatibleDC(NULL);
-    if (!hdc) {
-        assert(0);
-        if (!dc) {
-            prc->right = prc->left;
-            prc->bottom = prc->top;
-        }
-        return;
+    // 計測用DCはコンストラクタで作った m_dc を使う（コスト削減）
+    HDC hdc = dc ? dc : m_dc;
+
+    // 描画時のみ使用するリソース（ブラシ）はここで1回だけ作る
+    HBRUSH hBrushBg = NULL;
+    HBRUSH hBrushSel = NULL;
+    if (dc) {
+        hBrushBg = CreateSolidBrush(colors[1]);
+        hBrushSel = CreateSolidBrush(colors[3]);
+        SetBkMode(dc, TRANSPARENT);
     }
 
-    // 描画/計測の準備
-    if (dc) SetBkMode(dc, TRANSPARENT); // 背景モード設定
-
+    // delta_x / base_y の計算
     if (flags & DT_CENTER)
         run.m_delta_x = (m_max_width - run.m_run_width) / 2;
     else if (flags & DT_RIGHT)
@@ -501,79 +505,79 @@ void TextDoc::_draw_run(
     INT current_x = prc->left + run.m_delta_x;
     const INT base_y = prc->top + run.m_ruby_height; // ベーステキストのY座標
 
-    // しきい値を取得する
-    HGDIOBJ hFontOld = SelectObject(hdc, m_hBaseFont);
+    // しきい値を取得する（計測と描画の両方で必要）
+    HGDIOBJ hFontOldForGap = SelectObject(hdc, m_hBaseFont);
     INT gap_threshold = get_text_width(hdc, L"漢i", 2);
-    SelectObject(hdc, hFontOld);
+    SelectObject(hdc, hFontOldForGap);
 
     // パーツを順に処理し、計測または描画する
     for (INT iPart = run.m_part_index_start; iPart < run.m_part_index_end; ++iPart) {
         assert(0 <= iPart && iPart < (INT)m_parts.size());
         TextPart& part = m_parts[iPart];
 
-        // 描画対象の長方形
+        // 描画対象の長方形（計測用に作るが、描画は dc のときのみ行う）
         RECT rc = { current_x, prc->top, current_x + part.m_part_width, prc->top + run.m_run_height };
 
-        HBRUSH hBrush;
-        if (part.m_selected) { // 選択状態か？
-            SetTextColor(hdc, colors[2]);
-            hBrush = CreateSolidBrush(colors[3]);
-        } else {
-            SetTextColor(hdc, colors[0]);
-            hBrush = CreateSolidBrush(colors[1]);
-        }
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-
-        if (dc && RectVisible(dc, &rc)) { // 描画すべきか？
-            switch (part.m_type) {
-            case TextPart::NORMAL:
-                // 通常テキストの描画 (ベースラインに描画)
-                hFontOld = SelectObject(dc, m_hBaseFont);
-                ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
-                SelectObject(dc, hFontOld);
-                break;
-            case TextPart::RUBY:
-                {
-                    // ベーステキストの配置を決める
-                    INT base_start_x = current_x;
-                    if (part.m_part_width > part.m_base_width) {
-                        base_start_x += (part.m_part_width - part.m_base_width) / 2;
-                    }
-
-                    // ルビの配置を決める
-                    INT ruby_extra, ruby_start_x = current_x;
-                    if (part.m_part_width - part.m_ruby_width > gap_threshold) {
-                        // 両端ぞろえ
-                        // SetTextCharacterExtraで使用する文字間スペースを設定
-                        if (part.m_ruby_len > 1) {
-                            ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
-                        }
-                    } else {
-                        // パート内で中央ぞろえ
-                        ruby_start_x += (part.m_part_width - part.m_ruby_width) / 2;
-                        ruby_extra = 0;
-                    }
-
-                    // ベーステキストの描画
-                    hFontOld = SelectObject(dc, m_hBaseFont);
-                    ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
-                    SelectObject(dc, hFontOld);
-
-                    // ルビテキストの描画
-                    hFontOld = SelectObject(dc, m_hRubyFont);
-                    INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-                    ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
-                    SetTextCharacterExtra(dc, old_extra_ruby);
-                    SelectObject(dc, hFontOld);
-                }
-                break;
-            case TextPart::NEWLINE:
-                break;
+        if (dc) {
+            // 背景の塗りつぶし（選択状態ごとにブラシを使い分け） — ブラシは再利用
+            if (part.m_selected) {
+                SetTextColor(dc, colors[2]);
+                FillRect(dc, &rc, hBrushSel);
+            } else {
+                SetTextColor(dc, colors[0]);
+                FillRect(dc, &rc, hBrushBg);
             }
-        }
 
-        // 次の描画位置に更新
+            if (RectVisible(dc, &rc)) { // 描画すべきか？
+                switch (part.m_type) {
+                case TextPart::NORMAL:
+                    {
+                        HGDIOBJ hOld = SelectObject(dc, m_hBaseFont);
+                        ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
+                        SelectObject(dc, hOld);
+                    }
+                    break;
+                case TextPart::RUBY:
+                    {
+                        // ベーステキストの配置を決める
+                        INT base_start_x = current_x;
+                        if (part.m_part_width > part.m_base_width) {
+                            base_start_x += (part.m_part_width - part.m_base_width) / 2;
+                        }
+
+                        // ルビの配置を決める
+                        INT ruby_extra = 0, ruby_start_x = current_x;
+                        if (part.m_part_width - part.m_ruby_width > gap_threshold) {
+                            // 両端ぞろえ
+                            if (part.m_ruby_len > 1) {
+                                ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
+                            }
+                        } else {
+                            // パート内で中央ぞろえ
+                            ruby_start_x += (part.m_part_width - part.m_ruby_width) / 2;
+                            ruby_extra = 0;
+                        }
+
+                        // ベーステキストの描画
+                        HGDIOBJ hOldBase = SelectObject(dc, m_hBaseFont);
+                        ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
+                        SelectObject(dc, hOldBase);
+
+                        // ルビテキストの描画
+                        HGDIOBJ hOldRuby = SelectObject(dc, m_hRubyFont);
+                        INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
+                        ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
+                        SetTextCharacterExtra(dc, old_extra_ruby);
+                        SelectObject(dc, hOldRuby);
+                    }
+                    break;
+                case TextPart::NEWLINE:
+                    break;
+                }
+            }
+        } // if (dc)
+
+        // 次の描画位置に更新（計測は常に行う）
         current_x += part.m_part_width;
     }
 
@@ -583,15 +587,14 @@ void TextDoc::_draw_run(
     }
 
     // クリーンアップ
-    if (!dc) DeleteDC(hdc);
+    if (hBrushBg) DeleteObject(hBrushBg);
+    if (hBrushSel) DeleteObject(hBrushSel);
+    // m_dc はコンストラクタで作っているのでここで削除しない
 }
 
-/**
- * 文書を描画する。
- * @param dc 描画するときはデバイスコンテキスト。描画せず、計測したいときは NULL。
- * @param prc 描画する位置とサイズ。計測のみの場合、サイズが変更される。
- * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_SINGLELINE。
- */
+/////////////////////////////////////////////////////////////////////////////
+// draw_doc / get_ideal_size remain mostly unchanged but benefit from _draw_run improvements
+
 void TextDoc::draw_doc(
     HDC dc,
     LPRECT prc,
@@ -620,6 +623,8 @@ void TextDoc::draw_doc(
         rc.bottom = rc.top + run.m_run_height;
         if (dc && RectVisible(dc, &rc))
             _draw_run(dc, run, &rc, flags, colors);
+        else if (!dc)
+            _draw_run(NULL, run, &rc, flags, colors);
 
         if (max_run_width < run.m_run_width)
             max_run_width = run.m_run_width;
