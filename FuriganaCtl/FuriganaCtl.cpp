@@ -173,11 +173,16 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
         ::DeleteObject(m_sub_font);
 
     m_sub_font = ::CreateFontIndirect(&lf);
+    if (!m_sub_font) {
+        OutputDebugStringA("CreateFontIndirect failed!\n");
+        m_own_sub_font = false;
+        return;
+    }
+
+    m_doc.m_hBaseFont = m_font; // 弱い参照
+    m_doc.m_hRubyFont = m_sub_font; // 弱い参照
 
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
-
-    m_doc.m_hBaseFont = m_font;
-    m_doc.m_hRubyFont = m_sub_font;
 }
 
 // WM_KEYDOWN, WM_KEYUP
@@ -576,8 +581,6 @@ INT FuriganaCtl_impl::hit_test(INT x, INT y) {
 // iPart: パートインデックス（m_doc.m_parts のインデックス）
 void FuriganaCtl_impl::ensure_visible(INT iPart)
 {
-    if (iPart > 230)
-
     if (iPart < 0) iPart = 0;
     if (iPart >= (INT)m_doc.m_parts.size()) iPart = (INT)m_doc.m_parts.size();
 
@@ -795,7 +798,7 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
         nPos = max(si.nMin, nPos - m_scroll_step_x);
         break;
     case SB_LINERIGHT:
-        nPos = min(INT(si.nMax - si.nPage), nPos + m_scroll_step_x);
+        nPos = min(INT(max(0, si.nMax - (INT)si.nPage)), nPos + m_scroll_step_x);
         break;
     case SB_PAGELEFT:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
@@ -840,7 +843,7 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
         nPos = max(si.nMin, nPos - m_scroll_step_y);
         break;
     case SB_LINEDOWN:
-        nPos = min(INT(si.nMax - si.nPage), nPos + m_scroll_step_y);
+        nPos = min(INT(max(0, si.nMax - (INT)si.nPage)), nPos + m_scroll_step_y);
         break;
     case SB_PAGEUP:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
