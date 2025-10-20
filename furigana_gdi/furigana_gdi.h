@@ -144,6 +144,7 @@ struct TextDoc {
     void draw_doc(HDC dc, LPRECT prc, UINT flags, const COLORREF *colors = NULL);
     void get_ideal_size(LPRECT prc, UINT flags);
     INT update_runs();
+    bool get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT flags);
 
 protected:
     void _update_parts_height();

@@ -220,6 +220,69 @@ void TextDoc::_add_para(const std::wstring& text) {
 }
 
 /**
+ * パートのインデックスから座標を求める。
+ * 返す座標は layout の起点 (0,0) に対する相対座標です（draw_doc の prc->top/left を 0 と見なしたとき）。
+ * @param iPart パートのインデックス。
+ * @param layout_width 折り返しを行う場合の幅（pixels）。DT_SINGLELINE のときは無視されます。
+ * @param ppt 座標を受け取るPOINT構造体へのポインタ。
+ * @param flags draw_doc と同じフラグ（DT_SINGLELINE, DT_CENTER, DT_RIGHT）。
+ * @return 成功すれば true、失敗すれば false。
+ */
+bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT flags) {
+    if (!ppt) return false;
+    if (iPart < 0) iPart = 0;
+    if (iPart >= (INT)m_parts.size()) iPart = (INT)m_parts.size();
+
+    // m_max_width を設定してランを更新
+    m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : layout_width;
+    update_runs();
+
+    // ランごとの m_delta_x を計算（draw_doc と同じ方式）
+    for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
+        TextRun& run = m_runs[iRun];
+        if (flags & DT_CENTER)
+            run.m_delta_x = (m_max_width - run.m_run_width) / 2;
+        else if (flags & DT_RIGHT)
+            run.m_delta_x = m_max_width - run.m_run_width;
+        else
+            run.m_delta_x = 0;
+    }
+
+    if (iPart == 0) {
+        ppt->x = m_runs.empty() ? 0 : m_runs[0].m_delta_x;
+        ppt->y = 0;
+        return true;
+    }
+
+    // ランを巡回して該当するパートを見つける
+    INT current_y = 0;
+    for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
+        TextRun& run = m_runs[iRun];
+        if (iRun > 0)
+            current_y += m_line_gap;
+
+        // run の vertical span: [current_y, current_y + run.m_run_height)
+        if (iPart >= run.m_part_index_start && iPart < run.m_part_index_end) {
+            // 水平方向の位置を計算
+            INT current_x = 0;
+            for (INT pi = run.m_part_index_start; pi < iPart; ++pi) {
+                current_x += m_parts[pi].m_part_width;
+            }
+
+            ppt->x = current_x + run.m_delta_x;
+            ppt->y = current_y;
+            return true;
+        }
+
+        current_y += run.m_run_height;
+    }
+
+    ppt->x = 0;
+    ppt->y = current_y;
+    return true;
+}
+
+/**
  * テキストを分割する。
  * @param container コンテナ。
  * @param str テキスト文字列。

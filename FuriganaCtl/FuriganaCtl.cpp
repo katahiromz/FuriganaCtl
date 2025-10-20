@@ -236,6 +236,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             }
         }
         m_doc.set_selection(iStart, iEnd);
+        ensure_visible(iEnd);
         invalidate();
         break;
     case VK_END: // End キー
@@ -268,12 +269,12 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             }
         }
         m_doc.set_selection(iStart, iEnd);
+        ensure_visible(iEnd);
         invalidate();
         break;
     default:
         break;
     }
-
 }
 
 // WM_GETDLGCODE
@@ -385,13 +386,128 @@ void FuriganaCtl_impl::OnCopy(HWND hwnd) {
 
 // 当たり判定
 INT FuriganaCtl_impl::hit_test(INT x, INT y) {
-    // Use the stored scroll offsets (m_scroll_x/m_scroll_y) rather than querying
-    // the scrollbar control via GetScrollPos(). This avoids races / inconsistencies
-    // between the control's scroll position and the internal m_scroll_* values
-    // used for painting.
     x += m_scroll_x - m_margin_rect.left;
     y += m_scroll_y - m_margin_rect.top;
     return m_doc.hit_test(x, y);
+}
+
+// ensure_visible: 指定されたパートがクライアント領域内に入るようにスクロール位置を調整します。
+// iPart: パートインデックス（m_doc.m_parts のインデックス）
+void FuriganaCtl_impl::ensure_visible(INT iPart)
+{
+    if (iPart < 0) iPart = 0;
+    if (iPart >= (INT)m_doc.m_parts.size()) iPart = (INT)m_doc.m_parts.size();
+
+    // クライアントの描画領域（マージンを除く）
+    RECT rcClient;
+    ::GetClientRect(m_hwnd, &rcClient);
+    RECT rc = rcClient;
+    rc.left += m_margin_rect.left;
+    rc.top += m_margin_rect.top;
+    rc.right -= m_margin_rect.right;
+    rc.bottom -= m_margin_rect.bottom;
+
+    UINT flags = get_draw_flags();
+
+    // layout_width: 折り返し幅（単一行モードなら無視される）
+    INT layout_width = (flags & DT_SINGLELINE) ? MAXLONG : max(0, rc.right - rc.left);
+    POINT pt = {0, 0};
+    if (!m_doc.get_part_position(iPart, layout_width, &pt, flags))
+        return;
+
+    if (iPart > m_doc.m_selection_end) {
+        pt.y += m_doc.m_base_height + m_doc.m_ruby_height;
+    }
+
+    // run 高さとパート幅を取得（垂直スクロール調整に使用）
+    INT part_width = 0, run_height = 0;
+    if (iPart < (INT)m_doc.m_parts.size()) {
+        part_width = m_doc.m_parts[iPart].m_part_width;
+        run_height = 0;
+        for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
+            const TextRun &run = m_doc.m_runs[ri];
+            if (iPart >= run.m_part_index_start && iPart < run.m_part_index_end) {
+                run_height = run.m_run_height;
+                break;
+            }
+        }
+    }
+
+    // 現在のページサイズ
+    INT pageW = max(0, rc.right - rc.left);
+    INT pageH = max(0, rc.bottom - rc.top);
+
+    // 更新前にスクロール情報を最新化して範囲を得る
+    update_scroll_info();
+
+    // 取得されたスクロール範囲を得る
+    SCROLLINFO siH = { sizeof(siH) };
+    siH.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+    ::GetScrollInfo(m_hwnd, SB_HORZ, &siH);
+    INT maxH = siH.nMax;
+    INT minH = siH.nMin;
+    INT pageHx = (INT)siH.nPage;
+
+    SCROLLINFO siV = { sizeof(siV) };
+    siV.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+    ::GetScrollInfo(m_hwnd, SB_VERT, &siV);
+    INT maxV = siV.nMax;
+    INT minV = siV.nMin;
+    INT pageVy = (INT)siV.nPage;
+
+    INT new_scroll_x = m_scroll_x;
+    INT new_scroll_y = m_scroll_y;
+
+    // 横スクロール：単一行または必要に応じて
+    if (flags & DT_SINGLELINE) {
+        if (pt.x < m_scroll_x) {
+            new_scroll_x = pt.x;
+        } else if (pt.x + part_width > m_scroll_x + pageW) {
+            new_scroll_x = pt.x + part_width - pageW;
+        }
+    } else {
+        // 複数行でも横方向に見切れがあるなら調整（稀なケース）
+        if (pt.x < m_scroll_x) {
+            new_scroll_x = pt.x;
+        } else if (pt.x + part_width > m_scroll_x + pageW) {
+            new_scroll_x = pt.x + part_width - pageW;
+        }
+    }
+
+    // 縦スクロール
+    if (pt.y < m_scroll_y) {
+        new_scroll_y = pt.y;
+    } else if (pt.y + run_height > m_scroll_y + pageH) {
+        new_scroll_y = pt.y + run_height - pageH;
+    }
+
+    // clamp
+    if (new_scroll_x < minH) new_scroll_x = minH;
+    if (new_scroll_x > maxH) new_scroll_x = maxH;
+    if (new_scroll_y < minV) new_scroll_y = minV;
+    if (new_scroll_y > maxV) new_scroll_y = maxV;
+
+    // 変更があれば反映
+    bool changed = false;
+    if (new_scroll_x != m_scroll_x) {
+        m_scroll_x = new_scroll_x;
+        SCROLLINFO si = { sizeof(si) };
+        si.fMask = SIF_POS;
+        si.nPos = m_scroll_x;
+        ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
+        changed = true;
+    }
+    if (new_scroll_y != m_scroll_y) {
+        m_scroll_y = new_scroll_y;
+        SCROLLINFO si = { sizeof(si) };
+        si.fMask = SIF_POS;
+        si.nPos = m_scroll_y;
+        ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
+        changed = true;
+    }
+
+    if (changed)
+        invalidate();
 }
 
 // WM_LBUTTONDOWN
@@ -414,6 +530,7 @@ void FuriganaCtl_impl::OnMouseMove(HWND hwnd, INT x, INT y, UINT keyFlags) {
 
     INT iPart = hit_test(x, y);
     m_doc.set_selection(m_doc.m_selection_start, iPart);
+    ensure_visible(iPart);
 
     invalidate();
 }
@@ -427,6 +544,7 @@ void FuriganaCtl_impl::OnLButtonUp(HWND hwnd, INT x, INT y, UINT keyFlags) {
 
     INT iPart = hit_test(x, y);
     m_doc.set_selection(m_doc.m_selection_start, iPart);
+    ensure_visible(iPart);
 
     ::ReleaseCapture();
     invalidate();
