@@ -574,11 +574,23 @@ void FuriganaCtl_impl::OnCopy(HWND hwnd) {
     }
 }
 
-// 当たり判定
+/**
+ * 当たり判定。
+ * クライアント座標をドキュメント座標に変換して当たり判定を実行します。
+ *
+ * @param x クライアント座標のX
+ * @param y クライアント座標のY
+ * @return ドキュメント座標での当たり判定結果。
+ *         具体的には m_doc.hit_test(doc_x, doc_y) の返却値：
+ *         - 該当するパートのインデックス（0 ～ パート数-1）
+ *         - パートが見つからない場合はパート総数
+ */
 INT FuriganaCtl_impl::hit_test(INT x, INT y) {
-    x += m_scroll_x - m_margin_rect.left;
-    y += m_scroll_y - m_margin_rect.top;
-    return m_doc.hit_test(x, y);
+    INT draw_x = x - m_margin_rect.left;
+    INT draw_y = y - m_margin_rect.top;
+    INT doc_x = draw_x + m_scroll_x;
+    INT doc_y = draw_y + m_scroll_y;
+    return m_doc.hit_test(doc_x, doc_y);
 }
 
 // ensure_visible: 指定されたパートがクライアント領域内に入るようにスクロール位置を調整します。
@@ -604,10 +616,6 @@ void FuriganaCtl_impl::ensure_visible(INT iPart)
     POINT pt = {0, 0};
     if (!m_doc.get_part_position(iPart, layout_width, &pt, flags))
         return;
-
-    if (iPart > m_doc.m_selection_end) {
-        pt.y += m_doc.get_part_height(iPart);
-    }
 
     // run 高さとパート幅を取得（垂直スクロール調整に使用）
     INT part_width = 0, run_height = 0;
