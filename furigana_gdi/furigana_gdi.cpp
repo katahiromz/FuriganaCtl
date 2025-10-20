@@ -458,27 +458,19 @@ INT TextDoc::hit_test(INT x, INT y) {
  * @return 取得したテキスト文字列。
  */
 std::wstring TextDoc::get_selection_text() {
-    std::vector<TextPart>& parts = m_parts;
-    INT iStart = m_selection_start;
-    INT iEnd = m_selection_end;
-    if (iStart == -1) {
+    INT start = min(m_selection_start, m_selection_end);
+    INT end = max(m_selection_start, m_selection_end);
+
+    if (start < 0 || start >= (INT)m_parts.size() || end <= start)
         return L"";
-    } else {
-        if (iEnd == -1)
-            iEnd = (INT)parts.size();
 
-        if (iStart > iEnd)
-            std::swap(iStart, iEnd);
-
-        std::wstring text;
-        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-            if (iStart <= (INT)iPart && (INT)iPart < iEnd) {
-                TextPart& part = parts[iPart];
-                text += m_text.substr(part.m_base_index, part.m_base_len);
-            }
-        }
-        return text;
+    std::wstring text;
+    for (INT iPart = start; iPart < end; ++iPart) {
+        TextPart& part = m_parts[iPart];
+        text += part.m_text;
     }
+
+    return text;
 }
 
 /**
