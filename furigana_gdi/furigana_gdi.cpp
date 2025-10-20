@@ -149,6 +149,12 @@ void TextDoc::set_dirty() {
 void TextDoc::set_fonts(HFONT hBaseFont, HFONT hRubyFont) {
     m_hBaseFont = hBaseFont;
     m_hRubyFont = hRubyFont;
+
+    // しきい値を取得する（計測と描画の両方で必要）
+    HGDIOBJ hFontOldForGap = SelectObject(m_dc, m_hBaseFont);
+    m_gap_threshold = get_text_width(m_dc, L"漢i", 2);
+    SelectObject(m_dc, hFontOldForGap);
+
     set_dirty();
 }
 
@@ -493,11 +499,6 @@ std::wstring TextDoc::get_selection_text() {
 INT TextDoc::update_runs() {
     m_runs.clear();
 
-    // しきい値を取得する（計測と描画の両方で必要）
-    HGDIOBJ hFontOldForGap = SelectObject(m_dc, m_hBaseFont);
-    m_gap_threshold = get_text_width(m_dc, L"漢i", 2);
-    SelectObject(m_dc, hFontOldForGap);
-
     // パーツの寸法を計算する
     _update_parts_height();
     _update_parts_width();
@@ -511,7 +512,8 @@ INT TextDoc::update_runs() {
 
         // 最大幅を超えたら、折り返し。
         // TODO: 禁則処理
-        if (part.m_text == L"\n" || (m_max_width > 0 && current_x + part_width > m_max_width && current_x != 0)) {
+        bool wrap = (m_max_width > 0 && current_x + part_width > m_max_width);
+        if (part.m_text == L"\n" || (wrap && current_x != 0)) {
             // ランを追加
             TextRun run;
             run.m_part_index_start = iPart0;
