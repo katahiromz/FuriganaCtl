@@ -68,11 +68,13 @@ HWND hwndFurigana = CreateWindowW(
     NULL);
 ```
 
+ダイアログ リソースからでも作成できます。
+
 ## カスタムメッセージ一覧
 
 | 定数              | WPARAM               | LPARAM                          | 説明                                                        |
 | ----------------- | -------------------- | ------------------------------- | ----------------------------------------------------------- |
-| `FC_SETRUBYRATIO` | 分子                 | 分母                            | ルビ倍率設定                                                |
+| `FC_SETRUBYRATIO` | 分子                 | 分母                            | ルビ倍率設定 (0 < 分子 / 分母 <= 1)                         |
 | `FC_SETMARGIN`    | 0                    | LPRECT                          | 余白設定（NULLでデフォルトに戻す）                          |
 | `FC_SETCOLOR`     | 色インデックス(0-3)  | `COLORREF` または `CLR_INVALID` | 色の設定／リセット                                          |
 | `FC_GETIDEALSIZE` | 0=枠付き, 1=内容のみ | LPRECT                          | 理想的な描画サイズを取得                                    |
@@ -92,17 +94,12 @@ HWND hwndFurigana = CreateWindowW(
 * Windows 2000 以降
 * C++/Win32
 
-## ライセンス
-
-- MIT ライセンス
-
 ## 作者
 
 **`katahiromz`**
 
-* Twitter: [@katahiromz](https://twitter.com/katahiromz)
-* Blog: [https://katahiromz.web.fc2.com/](https://katahiromz.web.fc2.com/)
-* License: MIT
+* Twitter: [`@katahiromz`](https://twitter.com/katahiromz)
+* Blog: [https://katahiromz.fc2.page/](https://katahiromz.fc2.page/)
 
 ---
-Copyright (c) 2025 katahiromz
+Copyright &copy; 2025 katahiromz
