@@ -106,7 +106,6 @@ struct TextDoc {
     INT m_selection_start; // パートのインデックス。
     INT m_selection_end; // パートのインデックス。
     INT m_para_width;
-    INT m_para_height;
     INT m_max_width;
     INT m_line_gap;
     INT m_ruby_ratio_mul;
@@ -123,7 +122,6 @@ struct TextDoc {
         m_selection_start = -1;
         m_selection_end = 0;
         m_para_width = 0;
-        m_para_height = 0;
         m_max_width = 0;
         m_line_gap = 2;
         m_hBaseFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);

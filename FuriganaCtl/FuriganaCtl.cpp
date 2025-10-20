@@ -102,7 +102,8 @@ UINT FuriganaCtl_impl::get_draw_flags() const {
     DWORD style = m_self->get_style();
 
     UINT flags = 0;
-    if (!(style & ES_MULTILINE)) flags |= DT_SINGLELINE;
+    if (!(style & ES_MULTILINE) || ((style & ES_AUTOHSCROLL) && !(style & (ES_RIGHT | ES_CENTER))))
+        flags |= DT_SINGLELINE;
     if (style & ES_CENTER) flags |= DT_CENTER;
     if (style & ES_RIGHT) flags |= DT_RIGHT;
     return flags;
@@ -773,40 +774,32 @@ void FuriganaCtl_impl::OnSysColorChange(HWND hwnd) {
 
 // WM_SIZE
 void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
-    // クライアントサイズからスクロール範囲を決定する
-    RECT rcClient = {0, 0, cx, cy};
-    RECT rc = rcClient;
-    rc.left += m_margin_rect.left;
-    rc.top += m_margin_rect.top;
-    rc.right -= m_margin_rect.right;
-    rc.bottom -= m_margin_rect.bottom;
+    // 理想的なサイズを取得
+    RECT rc = { 0, 0, cx, cy };
+    ::SendMessageW(hwnd, FC_GETIDEALSIZE, 1, (LPARAM)&rc);
 
-    // doc のサイズ計算（描画計測）
-    RECT rcIdeal = rc;
-    m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
-    INT doc_width = m_doc.m_para_width;
-    INT doc_height = m_doc.m_para_height;
+    // 内部サイズ
+    INT cxInner = cx - (m_margin_rect.left + m_margin_rect.right);
+    INT cyInner = cy - (m_margin_rect.top + m_margin_rect.bottom);
 
-    // 垂直スクロール設定
-    SCROLLINFO si;
-    si.cbSize = sizeof(si);
-    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
-    si.nMin = 0;
-    si.nMax = max(0, doc_height - (rc.bottom - rc.top));
-    si.nPage = max(0, rc.bottom - rc.top);
-    si.nPos = m_scroll_y;
-    if (si.nPos > si.nMax) si.nPos = si.nMax;
-    SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
-    m_scroll_y = si.nPos;
+    SCROLLINFO si = { sizeof(si) };
 
     // 水平スクロール設定（単一行のとき等）
-    si.nMin = 0;
-    si.nMax = max(0, doc_width - (rc.right - rc.left));
-    si.nPage = max(0, rc.right - rc.left);
+    si.nMax = max(0, rc.top);
+    si.nPage = max(0, cxInner);
     si.nPos = m_scroll_x;
     if (si.nPos > si.nMax) si.nPos = si.nMax;
     SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
     m_scroll_x = si.nPos;
+
+    // 垂直スクロール設定
+    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+    si.nMax = max(0, rc.bottom);
+    si.nPage = max(0, cyInner);
+    si.nPos = m_scroll_y;
+    if (si.nPos > si.nMax) si.nPos = si.nMax;
+    SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+    m_scroll_y = si.nPos;
 }
 
 // WM_HSCROLL

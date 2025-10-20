@@ -16,6 +16,7 @@ void SetAlign(HWND hwnd, DWORD align)
     style &= ~(ES_CENTER | ES_RIGHT);
     if (align & ES_CENTER) style |= ES_CENTER;
     if (align & ES_RIGHT) style |= ES_RIGHT;
+
     SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
 
     InvalidateRect(hwndEdt2, NULL, TRUE);

@@ -292,7 +292,7 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
     if (iPart >= (INT)m_parts.size()) iPart = (INT)m_parts.size();
 
     // m_max_width を設定してランを更新
-    m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : layout_width;
+    m_max_width = ((flags & DT_SINGLELINE) && !(flags & (DT_RIGHT | DT_CENTER))) ? MAXLONG : layout_width;
 
     if (m_layout_dirty) {
         update_runs();
@@ -380,7 +380,6 @@ void TextDoc::clear() {
     m_selection_start = -1;
     m_selection_end = 0;
     m_para_width = 0;
-    m_para_height = 0;
 }
 
 /**
@@ -563,9 +562,8 @@ INT TextDoc::update_runs() {
         bool wrap = (m_max_width > 0 && current_x + part_width > m_max_width);
 
         if (wrap && current_x != 0) {
-            // 直前パート末尾文字 / 現パート先頭文字（C++03 対応）
-            wchar_t prevCh = 0;
-            wchar_t nextCh = 0;
+            // 直前パート末尾文字 / 現パート先頭文字
+            wchar_t prevCh = 0, nextCh = 0;
             if (iPart > 0) {
                 const std::wstring &prevText = m_parts[iPart - 1].m_text;
                 if (!prevText.empty())
@@ -658,16 +656,9 @@ INT TextDoc::update_runs() {
     m_runs.push_back(run);
 
     // 各ランの高さを計算する
-    m_para_height = 0;
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
         TextRun& run = m_runs[iRun];
         run.update_height(*this);
-        m_para_height += run.m_run_height;
-    }
-
-    // ラン間の行間を加算する（ランが複数ある場合）
-    if (m_runs.size() > 1) {
-        m_para_height += m_line_gap * (INT)(m_runs.size() - 1);
     }
 
     return (INT)m_runs.size();
@@ -858,12 +849,6 @@ void TextDoc::draw_doc(
     }
 
     m_para_width = max_run_width;
-
-    // 重要: get_ideal_size()/draw_doc(NULL,...) の呼び出しで
-    // m_para_height が正しく更新されるようにする
-    if (!dc) {
-        m_para_height = prc->bottom - prc->top;
-    }
 }
 
 /**
