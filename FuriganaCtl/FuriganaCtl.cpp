@@ -99,7 +99,7 @@ void FuriganaCtl_impl::invalidate() {
 
 // 描画フラグ群を取得
 UINT FuriganaCtl_impl::get_draw_flags() const {
-    DWORD style = (DWORD)GetWindowLongPtrW(m_hwnd, GWL_STYLE);
+    DWORD style = m_self->get_style();
 
     UINT flags = 0;
     if (!(style & ES_MULTILINE)) flags |= DT_SINGLELINE;
