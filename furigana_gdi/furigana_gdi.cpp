@@ -174,9 +174,7 @@ void TextDoc::_add_para(const std::wstring& text) {
                     part.m_type = TextPart::RUBY;
                     part.m_start_index = ich;
                     part.m_end_index = furigana_end + 2;
-#ifndef NDEBUG // デバッグ時のみ
                     part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
-#endif
                     part.m_base_index = ich + 1;
                     part.m_base_len = paren_start - (ich + 1);
                     part.m_ruby_index = paren_start + 1;
@@ -204,9 +202,7 @@ void TextDoc::_add_para(const std::wstring& text) {
                         part.m_type = TextPart::RUBY;
                         part.m_start_index = ich0;
                         part.m_end_index = ich2 + 1;
-#ifndef NDEBUG // デバッグ時のみ
                         part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
-#endif
                         part.m_base_index = ich0;
                         part.m_base_len = (ich1 - 1) - ich0;
                         part.m_ruby_index = ich1;
@@ -227,9 +223,7 @@ void TextDoc::_add_para(const std::wstring& text) {
         part.m_type = TextPart::NORMAL;
         part.m_start_index = char_index;
         part.m_end_index = ich;
-#ifndef NDEBUG // デバッグ時のみ
         part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
-#endif
         part.m_base_index = char_index;
         part.m_base_len = char_len;
         part.m_ruby_index = 0;
@@ -356,9 +350,7 @@ void TextDoc::add_text(const std::wstring& text) {
             part.m_type = TextPart::NEWLINE;
             part.m_start_index = ich;
             part.m_end_index = ich + 1;
-#ifndef NDEBUG // デバッグ時のみ
             part.m_text = L"\n";
-#endif
             part.m_base_index = ich;
             part.m_base_len = 1;
             part.m_ruby_index = 0;
