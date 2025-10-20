@@ -28,6 +28,39 @@ static const COLORREF *get_default_colors() {
     return s_colors;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// 禁則処理ヘルパー（C++03対応）
+
+#ifndef NO_KINSOKU
+
+static bool is_kinsoku_head(wchar_t ch)
+{
+    static const wchar_t head[] = L"、。，．)]｝〕〉》」』】〙〗〟’”ゝゞ々ぁぃぅぇぉっゃゅょァィゥェォッャュョヮヵヶー゛゜？！";
+    const wchar_t *pch = head;
+    while (*pch) {
+        if (*pch == ch)
+            return true;
+        ++pch;
+    }
+    return false;
+}
+
+static bool is_kinsoku_tail(wchar_t ch)
+{
+    static const wchar_t tail[] = L"([｛〔〈《「『【〘〖〝‘“（";
+    const wchar_t *pch = tail;
+    while (*pch) {
+        if (*pch == ch)
+            return true;
+        ++pch;
+    }
+    return false;
+}
+
+#endif // ndef NO_KINSOKU
+
+/////////////////////////////////////////////////////////////////////////////
+
 /**
  * テキストを分割する。
  * @param container 文字列ベクター。
