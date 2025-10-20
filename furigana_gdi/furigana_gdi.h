@@ -23,9 +23,7 @@ struct TextPart {
         NEWLINE // 改行文字
     } m_type;
 
-#ifndef NDEBUG // デバッグ時のみ
     std::wstring m_text;
-#endif
 
     // 元の compound_text 内での開始インデックス
     size_t m_start_index;
