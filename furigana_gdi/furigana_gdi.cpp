@@ -620,61 +620,59 @@ void TextDoc::_draw_run(
         RECT rc = { current_x, prc->top, current_x + part.m_part_width, prc->top + run.m_run_height };
 
         if (dc) {
-            if (RectVisible(dc, &rc)) { // 描画すべきか？
-                // 背景の塗りつぶし（選択状態ごとにブラシを使い分け） — ブラシは再利用
-                if (iStart <= iPart && iPart < iEnd) {
-                    SetTextColor(dc, colors[2]);
-                    FillRect(dc, &rc, hBrushSel);
-                } else {
-                    SetTextColor(dc, colors[0]);
-                    FillRect(dc, &rc, hBrushBg);
+            // 背景の塗りつぶし（選択状態ごとにブラシを使い分け） — ブラシは再利用
+            if (iStart <= iPart && iPart < iEnd) {
+                SetTextColor(dc, colors[2]);
+                FillRect(dc, &rc, hBrushSel);
+            } else {
+                SetTextColor(dc, colors[0]);
+                FillRect(dc, &rc, hBrushBg);
+            }
+
+            switch (part.m_type) {
+            case TextPart::NORMAL:
+                {
+                    HGDIOBJ hOld = SelectObject(dc, m_hBaseFont);
+                    ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
+                    SelectObject(dc, hOld);
                 }
-
-                switch (part.m_type) {
-                case TextPart::NORMAL:
-                    {
-                        HGDIOBJ hOld = SelectObject(dc, m_hBaseFont);
-                        ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
-                        SelectObject(dc, hOld);
+                break;
+            case TextPart::RUBY:
+                {
+                    // ベーステキストの配置を決める
+                    INT base_start_x = current_x;
+                    if (part.m_part_width > part.m_base_width) {
+                        base_start_x += (part.m_part_width - part.m_base_width) / 2;
                     }
-                    break;
-                case TextPart::RUBY:
-                    {
-                        // ベーステキストの配置を決める
-                        INT base_start_x = current_x;
-                        if (part.m_part_width > part.m_base_width) {
-                            base_start_x += (part.m_part_width - part.m_base_width) / 2;
+
+                    // ルビの配置を決める
+                    INT ruby_extra = 0, ruby_start_x = current_x;
+                    if (part.m_part_width - part.m_ruby_width > m_gap_threshold) {
+                        // 両端ぞろえ
+                        if (part.m_ruby_len > 1) {
+                            ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
                         }
-
-                        // ルビの配置を決める
-                        INT ruby_extra = 0, ruby_start_x = current_x;
-                        if (part.m_part_width - part.m_ruby_width > m_gap_threshold) {
-                            // 両端ぞろえ
-                            if (part.m_ruby_len > 1) {
-                                ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
-                            }
-                        } else {
-                            // パート内で中央ぞろえ
-                            ruby_start_x += (part.m_part_width - part.m_ruby_width) / 2;
-                            ruby_extra = 0;
-                        }
-
-                        // ベーステキストの描画
-                        HGDIOBJ hOldBase = SelectObject(dc, m_hBaseFont);
-                        ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
-                        SelectObject(dc, hOldBase);
-
-                        // ルビテキストの描画
-                        HGDIOBJ hOldRuby = SelectObject(dc, m_hRubyFont);
-                        INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-                        ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
-                        SetTextCharacterExtra(dc, old_extra_ruby);
-                        SelectObject(dc, hOldRuby);
+                    } else {
+                        // パート内で中央ぞろえ
+                        ruby_start_x += (part.m_part_width - part.m_ruby_width) / 2;
+                        ruby_extra = 0;
                     }
-                    break;
-                case TextPart::NEWLINE:
-                    break;
+
+                    // ベーステキストの描画
+                    HGDIOBJ hOldBase = SelectObject(dc, m_hBaseFont);
+                    ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
+                    SelectObject(dc, hOldBase);
+
+                    // ルビテキストの描画
+                    HGDIOBJ hOldRuby = SelectObject(dc, m_hRubyFont);
+                    INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
+                    ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
+                    SetTextCharacterExtra(dc, old_extra_ruby);
+                    SelectObject(dc, hOldRuby);
                 }
+                break;
+            case TextPart::NEWLINE:
+                break;
             }
         } // if (dc)
 
@@ -725,10 +723,7 @@ void TextDoc::draw_doc(
         RECT rc = *prc;
         rc.top = current_y;
         rc.bottom = rc.top + run.m_run_height;
-        if (dc && RectVisible(dc, &rc))
-            _draw_run(dc, run, &rc, flags, colors);
-        else if (!dc)
-            _draw_run(NULL, run, &rc, flags, colors);
+        _draw_run(dc, run, &rc, flags, colors);
 
         if (max_run_width < run.m_run_width)
             max_run_width = run.m_run_width;
