@@ -24,7 +24,12 @@ public:
     static FuriganaCtl *get_self(HWND hwnd) {
         return reinterpret_cast<FuriganaCtl *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     }
-    FuriganaCtl_impl *pimpl() { return reinterpret_cast<FuriganaCtl_impl *>(BaseTextBox::m_pimpl); }
+    FuriganaCtl_impl *pimpl() {
+        return reinterpret_cast<FuriganaCtl_impl *>(BaseTextBox::m_pimpl);
+    }
+    const FuriganaCtl_impl *pimpl() const {
+        return reinterpret_cast<FuriganaCtl_impl *>(BaseTextBox::m_pimpl);
+    }
 
     static BOOL register_class(HINSTANCE inst);
     static BOOL unregister_class(HINSTANCE inst);

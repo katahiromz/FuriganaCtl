@@ -1004,9 +1004,8 @@ BOOL FuriganaCtl::unregister_class(HINSTANCE inst) {
 // 内部ウィンドウ プロシージャ
 LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     FuriganaCtl_impl *pImpl = pimpl();
-    if (!pImpl) {
-        return 0;
-    }
+    if (!pImpl)
+        return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     switch (uMsg) {
         HANDLE_MSG(hwnd, WM_PAINT, pImpl->OnPaint);
         HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pImpl->OnLButtonDown);
