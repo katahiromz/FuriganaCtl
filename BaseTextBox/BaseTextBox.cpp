@@ -184,7 +184,7 @@ BaseTextBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
             assert(create_self);
             self = create_self();
             if (!self || !self->m_pimpl) {
-                out_of_memory();
+                OutputDebugStringA("Failed in BaseTextBox::window_proc\n");
                 return FALSE;
             }
             self->m_pimpl->m_hwnd = hwnd;

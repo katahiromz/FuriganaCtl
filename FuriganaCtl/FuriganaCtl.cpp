@@ -144,6 +144,29 @@ LRESULT FuriganaCtl_impl::OnSetColor(INT iColor, COLORREF rgbColor) {
     return TRUE;
 }
 
+// FC_GETIDEALSIZE
+LRESULT FuriganaCtl_impl::OnGetIdealSize(INT type, RECT *prc) {
+    if (!prc) {
+        DPRINTF(L"!prc\n");
+        return FALSE;
+    }
+
+    ::GetClientRect(m_hwnd, prc);
+    m_doc.get_ideal_size(prc, get_draw_flags());
+
+    switch (type) {
+    case 0:
+        prc->right += m_margin_rect.left + m_margin_rect.right;
+        prc->bottom += m_margin_rect.top + m_margin_rect.bottom;
+        return TRUE;
+    case 1:
+        return TRUE;
+    default:
+        DPRINTF(L"unknown type: %d\n", type);
+        return FALSE;
+    }
+}
+
 // FC_SETLINEGAP
 LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
     if (line_gap < 0)
@@ -1024,6 +1047,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         return pImpl->OnSetColor((INT)wParam, (COLORREF)lParam);
     case FC_SETLINEGAP:
         return pImpl->OnSetLineGap((INT)wParam);
+    case FC_GETIDEALSIZE:
+        return pImpl->OnGetIdealSize((INT)wParam, (RECT *)lParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }
