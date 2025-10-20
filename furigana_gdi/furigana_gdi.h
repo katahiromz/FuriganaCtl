@@ -113,6 +113,7 @@ struct TextDoc {
     INT m_ruby_ratio_div;
     HFONT m_hBaseFont;
     HFONT m_hRubyFont;
+    INT m_gap_threshold;
     bool m_layout_dirty;
 
     TextDoc() {
@@ -127,6 +128,7 @@ struct TextDoc {
         m_line_gap = 2;
         m_hBaseFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
         m_hRubyFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
+        m_gap_threshold = 0;
         m_layout_dirty = true;
     }
     ~TextDoc() {

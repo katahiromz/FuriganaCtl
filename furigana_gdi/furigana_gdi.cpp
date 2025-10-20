@@ -30,8 +30,8 @@ static const COLORREF *get_default_colors() {
 
 /**
  * テキストを分割する。
- * @param container コンテナ。
- * @param str テキスト文字列。
+ * @param container 文字列ベクター。
+ * @param str 分割するテキスト文字列。
  * @param chars 分割の区切り文字の集合。
  */
 inline void
@@ -40,9 +40,16 @@ mstr_split(std::vector<std::wstring>& container,
            const std::wstring& chars)
 {
     container.clear();
+    if (str.empty()) {
+        container.push_back(L"");
+        return;
+    }
+    if (chars.empty()) {
+        container.push_back(str);
+        return;
+    }
     size_t i = 0, k = str.find_first_of(chars);
-    while (k != std::wstring::npos)
-    {
+    while (k != std::wstring::npos) {
         container.push_back(str.substr(i, k - i));
         i = k + 1;
         k = str.find_first_of(chars, i);
@@ -486,6 +493,11 @@ std::wstring TextDoc::get_selection_text() {
 INT TextDoc::update_runs() {
     m_runs.clear();
 
+    // しきい値を取得する（計測と描画の両方で必要）
+    HGDIOBJ hFontOldForGap = SelectObject(m_dc, m_hBaseFont);
+    m_gap_threshold = get_text_width(m_dc, L"漢i", 2);
+    SelectObject(m_dc, hFontOldForGap);
+
     // パーツの寸法を計算する
     _update_parts_height();
     _update_parts_width();
@@ -593,11 +605,6 @@ void TextDoc::_draw_run(
     INT current_x = prc->left + run.m_delta_x;
     const INT base_y = prc->top + run.m_ruby_height; // ベーステキストのY座標
 
-    // しきい値を取得する（計測と描画の両方で必要）
-    HGDIOBJ hFontOldForGap = SelectObject(hdc, m_hBaseFont);
-    INT gap_threshold = get_text_width(hdc, L"漢i", 2);
-    SelectObject(hdc, hFontOldForGap);
-
     // 選択領域を種痘。
     INT iStart = m_selection_start, iEnd = m_selection_end;
     get_normalized_selection(iStart, iEnd);
@@ -611,16 +618,16 @@ void TextDoc::_draw_run(
         RECT rc = { current_x, prc->top, current_x + part.m_part_width, prc->top + run.m_run_height };
 
         if (dc) {
-            // 背景の塗りつぶし（選択状態ごとにブラシを使い分け） — ブラシは再利用
-            if (iStart <= iPart && iPart < iEnd) {
-                SetTextColor(dc, colors[2]);
-                FillRect(dc, &rc, hBrushSel);
-            } else {
-                SetTextColor(dc, colors[0]);
-                FillRect(dc, &rc, hBrushBg);
-            }
-
             if (RectVisible(dc, &rc)) { // 描画すべきか？
+                // 背景の塗りつぶし（選択状態ごとにブラシを使い分け） — ブラシは再利用
+                if (iStart <= iPart && iPart < iEnd) {
+                    SetTextColor(dc, colors[2]);
+                    FillRect(dc, &rc, hBrushSel);
+                } else {
+                    SetTextColor(dc, colors[0]);
+                    FillRect(dc, &rc, hBrushBg);
+                }
+
                 switch (part.m_type) {
                 case TextPart::NORMAL:
                     {
@@ -639,7 +646,7 @@ void TextDoc::_draw_run(
 
                         // ルビの配置を決める
                         INT ruby_extra = 0, ruby_start_x = current_x;
-                        if (part.m_part_width - part.m_ruby_width > gap_threshold) {
+                        if (part.m_part_width - part.m_ruby_width > m_gap_threshold) {
                             // 両端ぞろえ
                             if (part.m_ruby_len > 1) {
                                 ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
