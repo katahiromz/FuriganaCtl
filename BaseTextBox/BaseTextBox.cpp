@@ -74,8 +74,10 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
 // WM_GETTEXT
 INT BaseTextBox_impl::OnGetText(HWND hwnd, INT cchTextMax, LPTSTR lpszText) {
+    if (!lpszText)
+        return 0;
     if (!m_text) {
-        if (cchTextMax > 0 && lpszText) lpszText[0] = 0;
+        if (cchTextMax > 0) lpszText[0] = 0;
         return 0;
     }
     lstrcpynW(lpszText, m_text, cchTextMax);
@@ -125,11 +127,13 @@ void BaseTextBox_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
     if (m_font)
         old_font = ::SelectObject(dc, m_font);
 
-    INT old_mode = ::SetBkMode(dc, TRANSPARENT);
-    ::SetTextColor(dc, ::GetSysColor(COLOR_WINDOWTEXT));
-    ::DrawText(dc, m_text, m_text_length, rect,
-               DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
-    ::SetBkMode(dc, old_mode);
+    if (m_text && m_text_length > 0) {
+        INT old_mode = ::SetBkMode(dc, TRANSPARENT);
+        ::SetTextColor(dc, ::GetSysColor(COLOR_WINDOWTEXT));
+        ::DrawText(dc, m_text, m_text_length, rect,
+                   DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
+        ::SetBkMode(dc, old_mode);
+    }
 
     if (m_font && old_font)
         ::SelectObject(dc, old_font);
@@ -164,8 +168,8 @@ void BaseTextBox_impl::OnPaint(HWND hwnd) {
 
 IMPLEMENT_DYNAMIC(BaseTextBox);
 
-BaseTextBox::BaseTextBox(HWND hwnd) {
-    m_pimpl = new BaseTextBox_impl(hwnd, this);
+BaseTextBox::BaseTextBox() {
+    m_pimpl = new BaseTextBox_impl(this);
     if (!m_pimpl) {
         out_of_memory();
     }
@@ -215,7 +219,7 @@ BaseTextBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
                 out_of_memory();
                 return FALSE;
             }
-            self->m_hwnd = hwnd;
+            self->m_pimpl->m_hwnd = hwnd;
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)self);
         } else {
             return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);

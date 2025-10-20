@@ -18,10 +18,10 @@ struct BaseTextBox_impl {
     INT m_text_length;
     INT m_text_capacity;
 
-    BaseTextBox_impl(HWND hwnd, BaseTextBox *self) {
+    BaseTextBox_impl(BaseTextBox *self) {
         m_self = self;
-        m_hwnd = hwnd;
-        m_hwndParent = hwnd ? ::GetParent(hwnd) : NULL;
+        m_hwnd = NULL;
+        m_hwndParent = NULL;
         m_font = NULL;
         m_own_font = false;
         m_text = NULL;

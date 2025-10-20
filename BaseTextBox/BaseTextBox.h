@@ -46,7 +46,7 @@ class BaseTextBox
 public:
     DECLARE_DYNAMIC(BaseTextBox);
 
-    BaseTextBox(HWND hwnd = NULL);
+    BaseTextBox();
     virtual ~BaseTextBox();
 
     DWORD get_style() const;

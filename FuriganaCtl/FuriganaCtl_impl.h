@@ -20,7 +20,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     COLORREF m_colors[4];
     bool m_color_is_set[4];
 
-    FuriganaCtl_impl(HWND hwnd, BaseTextBox *self) : BaseTextBox_impl(hwnd, self) {
+    FuriganaCtl_impl(BaseTextBox *self) : BaseTextBox_impl(self) {
         m_sub_font = NULL;
         m_own_sub_font = false;
         m_ruby_ratio_mul = 4; // ルビ比率の分子

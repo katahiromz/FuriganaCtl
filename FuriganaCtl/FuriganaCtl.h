@@ -17,7 +17,7 @@ class FuriganaCtl : public BaseTextBox
 public:
     DECLARE_DYNAMIC(FuriganaCtl);
 
-    FuriganaCtl(HWND hwnd = NULL);
+    FuriganaCtl();
     virtual ~FuriganaCtl();
 
     static LPCWSTR get_class_name() { return L"FuriganaCtl"; }

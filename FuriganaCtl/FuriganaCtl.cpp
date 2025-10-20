@@ -933,9 +933,9 @@ void FuriganaCtl_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
 // 動的な生成を可能にする。
 IMPLEMENT_DYNAMIC(FuriganaCtl);
 
-FuriganaCtl::FuriganaCtl(HWND hwnd) {
+FuriganaCtl::FuriganaCtl() {
     delete m_pimpl;
-    m_pimpl = new FuriganaCtl_impl(hwnd, this);
+    m_pimpl = new FuriganaCtl_impl(this);
     if (!m_pimpl) {
         out_of_memory();
     }
