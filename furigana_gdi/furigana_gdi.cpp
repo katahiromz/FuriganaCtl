@@ -288,15 +288,14 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
  * @param str テキスト文字列。
  * @param chars 分割の区切り文字の集合。
  */
-template <typename T_STR_CONTAINER>
 inline void
-mstr_split(T_STR_CONTAINER& container,
-           const typename T_STR_CONTAINER::value_type& str,
-           const typename T_STR_CONTAINER::value_type& chars)
+mstr_split(std::vector<std::wstring>& container,
+           const std::wstring& str,
+           const std::wstring& chars)
 {
     container.clear();
     size_t i = 0, k = str.find_first_of(chars);
-    while (k != T_STR_CONTAINER::value_type::npos)
+    while (k != std::wstring::npos)
     {
         container.push_back(str.substr(i, k - i));
         i = k + 1;
@@ -320,7 +319,7 @@ void TextDoc::set_selection(INT iStart, INT iEnd) {
  * @param iPart パートのインデックス。
  */
 INT TextDoc::get_part_height(INT iPart) {
-    if (iPart <= 0 || iPart >= (INT)m_parts.size())
+    if (iPart < 0 || iPart >= (INT)m_parts.size())
         return 0;
 
     return m_base_height + (m_parts[iPart].has_ruby() ? m_ruby_height : 0);
@@ -404,7 +403,7 @@ INT TextDoc::hit_test(INT x, INT y) {
     if (m_runs.empty())
         update_runs();
 
-    if (y < 0) return 0;
+    if (m_runs.empty() || y < 0) return 0;
 
     // 垂直方向
     INT current_y = 0;

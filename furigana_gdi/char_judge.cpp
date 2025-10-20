@@ -59,10 +59,13 @@ size_t skip_kanji_chars(const std::wstring& str, size_t& ich) {
             wchar_t low = str[ich + 1];
             if (!is_surrogate_pair_kanji(high, low))
                 break;
-        }
 
-        if (!is_char_kanji(ch))
-            break;
+            ++ich;
+            ++ret;
+        } else {
+            if (!is_char_kanji(ch))
+                break;
+        }
 
         ++ich;
         ++ret;
@@ -83,10 +86,12 @@ size_t skip_kana_chars(const std::wstring& str, size_t& ich) {
             wchar_t low = str[ich + 1];
             if (!is_surrogate_pair_kana(high, low))
                 break;
+            ++ich;
+            ++ret;
+        } else {
+            if (!is_char_kana(ch))
+                break;
         }
-
-        if (!is_char_kana(ch))
-            break;
 
         ++ich;
         ++ret;
