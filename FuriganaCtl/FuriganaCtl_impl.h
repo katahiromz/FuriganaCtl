@@ -27,8 +27,8 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
         m_ruby_ratio_div = 5; // ルビ比率の分母
         m_scroll_x = 0;
         m_scroll_y = 0;
-        m_scroll_step_x = 12;
-        m_scroll_step_y = 12;
+        m_scroll_step_x = 24;
+        m_scroll_step_y = 24;
 
         SetRect(&m_margin_rect, 2, 2, 2, 2);
         reset_colors();
