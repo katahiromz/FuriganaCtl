@@ -245,7 +245,11 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
 
     // m_max_width を設定してランを更新
     m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : layout_width;
-    update_runs();
+
+    if (m_layout_dirty) {
+        update_runs();
+        m_layout_dirty = false;
+    }
 
     // ランごとの m_delta_x を計算（draw_doc と同じ方式）
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
@@ -396,8 +400,10 @@ void TextDoc::_update_parts_width() {
  * @return パートのインデックス。
  */
 INT TextDoc::hit_test(INT x, INT y) {
-    if (m_runs.empty())
+    if (m_layout_dirty) {
         update_runs();
+        m_layout_dirty = false;
+    }
 
     if (m_runs.empty() || y < 0) return 0;
 
