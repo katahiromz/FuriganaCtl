@@ -205,6 +205,12 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
     case VK_NEXT: // PageDown
         ::PostMessageW(hwnd, WM_VSCROLL, MAKELPARAM(SB_PAGEDOWN, 0), 0);
         break;
+    case VK_UP: // ↑
+        // TODO:
+        break;
+    case VK_DOWN: // ↓
+        // TODO:
+        break;
     case VK_HOME: // Home キー
         fCtrl = TRUE;
         // FALL THROUGH
