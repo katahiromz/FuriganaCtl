@@ -75,55 +75,20 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
 // WM_GETTEXT
 INT BaseTextBox_impl::OnGetText(HWND hwnd, INT cchTextMax, LPTSTR lpszText) {
-    if (!lpszText)
-        return 0;
-    if (!m_text) {
-        if (cchTextMax > 0) lpszText[0] = 0;
-        return 0;
-    }
-    lstrcpynW(lpszText, m_text, cchTextMax);
+    lstrcpynW(lpszText, m_text.c_str(), cchTextMax);
     return lstrlenW(lpszText);
 }
 
 // WM_GETTEXTLENGTH
 INT BaseTextBox_impl::OnGetTextLength(HWND hwnd) {
-    return m_text_length;
+    return (INT)m_text.size();
 }
 
 // WM_SETTEXT
 void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
     if (!lpszText) lpszText = L"";
 
-    INT text_len = lstrlenW(lpszText);
-    INT required_capacity = text_len + 1;
-
-    if (m_text_capacity > required_capacity * 4 && m_text_capacity > 4096) {
-        delete[] m_text;
-        m_text = new(std::nothrow) wchar_t[required_capacity];
-        if (!m_text) {
-            out_of_memory();
-            m_text_length = m_text_capacity = 0;
-            return;
-        }
-        m_text_capacity = required_capacity;
-    } else if (required_capacity > m_text_capacity) {
-        delete[] m_text;
-        INT new_capacity = required_capacity + (required_capacity / 2); // 1.5î{ê¨í∑
-        const INT min_extra = 1024; // è≠Ç»Ç≠Ç∆Ç‡1024ï∂éöÇÕó]ï™Ç…ämï€
-        if (new_capacity < required_capacity + min_extra) {
-            new_capacity = required_capacity + min_extra;
-        }
-        m_text = new(std::nothrow) wchar_t[new_capacity];
-        if (!m_text) {
-            out_of_memory();
-            m_text_length = m_text_capacity = 0;
-            return;
-        }
-        m_text_capacity = new_capacity;
-    }
-
-    lstrcpynW(m_text, lpszText, required_capacity);
-    m_text_length = text_len;
+    m_text = lpszText;
     invalidate();
 }
 
@@ -132,10 +97,10 @@ void BaseTextBox_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
     if (m_font)
         old_font = ::SelectObject(dc, m_font);
 
-    if (m_text && m_text_length > 0) {
+    if (m_text.size()) {
         INT old_mode = ::SetBkMode(dc, TRANSPARENT);
         ::SetTextColor(dc, ::GetSysColor(COLOR_WINDOWTEXT));
-        ::DrawText(dc, m_text, m_text_length, rect,
+        ::DrawText(dc, m_text.c_str(), (INT)m_text.length(), rect,
                    DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
         ::SetBkMode(dc, old_mode);
     }
@@ -266,11 +231,11 @@ BaseTextBox::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 }
 
 LPCWSTR BaseTextBox::get_text() const {
-    return m_pimpl->m_text ? m_pimpl->m_text : L"";
+    return m_pimpl->m_text.c_str();
 }
 
 INT BaseTextBox::get_text_length() const {
-    return m_pimpl->m_text_length;
+    return (INT)m_pimpl->m_text.length();
 }
 
 //////////////////////////////////////////////////////////////////////////////

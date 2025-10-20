@@ -14,9 +14,7 @@ struct BaseTextBox_impl {
     HWND m_hwndParent;
     HFONT m_font;
     bool m_own_font;
-    wchar_t *m_text;
-    INT m_text_length;
-    INT m_text_capacity;
+    std::wstring m_text;
 
     BaseTextBox_impl(BaseTextBox *self) {
         m_self = self;
@@ -24,14 +22,10 @@ struct BaseTextBox_impl {
         m_hwndParent = NULL;
         m_font = NULL;
         m_own_font = false;
-        m_text = NULL;
-        m_text_length = 0;
-        m_text_capacity = 0;
     }
     virtual ~BaseTextBox_impl() {
         if (m_own_font && m_font)
             ::DeleteObject(m_font);
-        delete[] m_text;
     }
 
     void paint_client(HWND hwnd, HDC hDC = NULL);
