@@ -114,6 +114,8 @@ LRESULT FuriganaCtl_impl::OnSetRubyRatio(INT mul, INT div) {
     if (mul >= 0 && div > 0) {
         m_doc.m_ruby_ratio_mul = mul; // ルビ比率の分子
         m_doc.m_ruby_ratio_div = div; // ルビ比率の分母
+
+        OnSetFont(m_hwnd, m_font, TRUE);
         return TRUE;
     }
     return FALSE;
