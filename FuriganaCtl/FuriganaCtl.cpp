@@ -157,8 +157,16 @@ LRESULT FuriganaCtl_impl::OnGetIdealSize(INT type, RECT *prc) {
 
     switch (type) {
     case 0:
-        prc->right += m_margin_rect.left + m_margin_rect.right;
-        prc->bottom += m_margin_rect.top + m_margin_rect.bottom;
+        {
+            RECT rc;
+            SetRect(&rc, 0, 0, prc->right - prc->left, prc->right - prc->left);
+
+            DWORD style = m_self->get_style(), exstyle = m_self->get_exstyle();
+            AdjustWindowRectEx(&rc, style, FALSE, exstyle);
+
+            prc->right = prc->left + (rc.right - rc.left) + (m_margin_rect.left + m_margin_rect.right);
+            prc->bottom = prc->top + (rc.bottom - rc.top) + (m_margin_rect.top + m_margin_rect.bottom);
+        }
         return TRUE;
     case 1:
         return TRUE;
