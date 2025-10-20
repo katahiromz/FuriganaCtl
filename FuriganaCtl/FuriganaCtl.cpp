@@ -206,10 +206,186 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
         ::PostMessageW(hwnd, WM_VSCROLL, MAKELPARAM(SB_PAGEDOWN, 0), 0);
         break;
     case VK_UP: // ↑
-        // TODO:
+        {
+            // Move caret/selection to the nearest part on the previous visual line.
+            // Use iEnd as the active caret position (consistent with Left/Right handling).
+            if (iStart == -1 || iEnd == -1) {
+                // nothing selected -> place at start
+                m_doc.set_selection(0, 0);
+                ensure_visible(0);
+                invalidate();
+                break;
+            }
+
+            INT caret = iEnd;
+            if (caret < 0) caret = 0;
+            if (caret > cParts) caret = cParts;
+
+            // Determine layout parameters
+            UINT drawFlags = get_draw_flags();
+
+            // Compute layout width (client area minus margins)
+            RECT rcClient;
+            ::GetClientRect(m_hwnd, &rcClient);
+            RECT rc = rcClient;
+            rc.left += m_margin_rect.left;
+            rc.top += m_margin_rect.top;
+            rc.right -= m_margin_rect.right;
+            rc.bottom -= m_margin_rect.bottom;
+            INT layout_width = (drawFlags & DT_SINGLELINE) ? MAXLONG : max(0, rc.right - rc.left);
+
+            // Get caret position
+            POINT caretPt = {0, 0};
+            if (!m_doc.get_part_position(caret, layout_width, &caretPt, drawFlags)) {
+                // fallback: do nothing
+                break;
+            }
+
+            // Find which run contains the caret
+            INT runIndex = (INT)m_doc.m_runs.size();
+            for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
+                const TextRun &run = m_doc.m_runs[ri];
+                if (caret >= run.m_part_index_start && caret < run.m_part_index_end) {
+                    runIndex = (INT)ri;
+                    break;
+                }
+            }
+
+            INT newIndex = 0;
+            if (runIndex <= 0) {
+                // Already on first run: move to start of doc
+                newIndex = 0;
+            } else {
+                // target is previous run
+                const TextRun &prevRun = m_doc.m_runs[runIndex - 1];
+
+                // desired x is caretPt.x
+                INT desiredX = caretPt.x;
+
+                // iterate parts in prevRun to find the one whose center is closest to desiredX
+                INT current_x = prevRun.m_delta_x;
+                INT bestPart = prevRun.m_part_index_start;
+                INT bestDist = INT_MAX;
+                for (INT pi = prevRun.m_part_index_start; pi < prevRun.m_part_index_end; ++pi) {
+                    const TextPart &p = m_doc.m_parts[pi];
+                    INT center = current_x + p.m_part_width / 2;
+                    INT dist = abs(center - desiredX);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestPart = pi;
+                    }
+                    current_x += p.m_part_width;
+                }
+                newIndex = bestPart;
+            }
+
+            // Clamp
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex > cParts) newIndex = cParts;
+
+            // Update selection based on Shift/Ctrl (Ctrl has no special effect for arrow up here)
+            if (fShift) {
+                // extend selection to newIndex, keeping anchor at iStart
+                // follow convention: keep iStart as anchor, iEnd moves
+                if (iStart == -1) iStart = caret; // fallback
+                iEnd = newIndex;
+            } else {
+                iStart = iEnd = newIndex;
+            }
+
+            m_doc.set_selection(iStart, iEnd);
+            ensure_visible(newIndex);
+            invalidate();
+        }
         break;
     case VK_DOWN: // ↓
-        // TODO:
+        {
+            // Move caret/selection to the nearest part on the next visual line.
+            if (iStart == -1 || iEnd == -1) {
+                // place at end
+                m_doc.set_selection(cParts, cParts);
+                ensure_visible(cParts);
+                invalidate();
+                break;
+            }
+
+            INT caret = iEnd;
+            if (caret < 0) caret = 0;
+            if (caret > cParts) caret = cParts;
+
+            UINT drawFlags = get_draw_flags();
+
+            RECT rcClient;
+            ::GetClientRect(m_hwnd, &rcClient);
+            RECT rc = rcClient;
+            rc.left += m_margin_rect.left;
+            rc.top += m_margin_rect.top;
+            rc.right -= m_margin_rect.right;
+            rc.bottom -= m_margin_rect.bottom;
+            INT layout_width = (drawFlags & DT_SINGLELINE) ? MAXLONG : max(0, rc.right - rc.left);
+
+            POINT caretPt = {0, 0};
+            if (!m_doc.get_part_position(caret, layout_width, &caretPt, drawFlags)) {
+                break;
+            }
+
+            // find run containing caret
+            INT runIndex = (INT)m_doc.m_runs.size();
+            for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
+                const TextRun &run = m_doc.m_runs[ri];
+                if (caret >= run.m_part_index_start && caret < run.m_part_index_end) {
+                    runIndex = (INT)ri;
+                    break;
+                }
+            }
+
+            INT newIndex = cParts;
+            if (runIndex == -1) {
+                // caret not inside runs (maybe at end) -> go to last part
+                if (!m_doc.m_runs.empty()) {
+                    const TextRun &lastRun = m_doc.m_runs.back();
+                    newIndex = lastRun.m_part_index_end - 1;
+                    if (newIndex < 0) newIndex = 0;
+                } else {
+                    newIndex = 0;
+                }
+            } else if (runIndex >= (INT)m_doc.m_runs.size() - 1) {
+                // already last run -> go to end
+                newIndex = cParts;
+            } else {
+                const TextRun &nextRun = m_doc.m_runs[runIndex + 1];
+                INT desiredX = caretPt.x;
+
+                INT current_x = nextRun.m_delta_x;
+                INT bestPart = nextRun.m_part_index_start;
+                INT bestDist = INT_MAX;
+                for (INT pi = nextRun.m_part_index_start; pi < nextRun.m_part_index_end; ++pi) {
+                    const TextPart &p = m_doc.m_parts[pi];
+                    INT center = current_x + p.m_part_width / 2;
+                    INT dist = abs(center - desiredX);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestPart = pi;
+                    }
+                    current_x += p.m_part_width;
+                }
+                newIndex = bestPart;
+            }
+
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex > cParts) newIndex = cParts;
+
+            if (fShift) {
+                if (iStart == -1) iStart = caret;
+                iEnd = newIndex;
+            } else {
+                iStart = iEnd = newIndex;
+            }
+
+            m_doc.set_selection(iStart, iEnd);
+            ensure_visible(newIndex);
+            invalidate();
+        }
         break;
     case VK_HOME: // Home キー
         fCtrl = TRUE;
