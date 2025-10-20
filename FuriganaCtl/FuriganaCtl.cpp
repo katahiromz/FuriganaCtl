@@ -98,6 +98,7 @@ void FuriganaCtl_impl::invalidate() {
     if (m_doc.m_text != m_text) {
         m_doc.clear();
         m_doc.add_text(m_text);
+        m_doc.set_dirty();
     }
 
     update_scroll_info();
