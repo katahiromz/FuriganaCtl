@@ -173,16 +173,17 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
         ::DeleteObject(m_sub_font);
 
     m_sub_font = ::CreateFontIndirect(&lf);
-    if (!m_sub_font) {
+    if (m_sub_font) {
+        m_doc.m_hBaseFont = m_font; // 弱い参照
+        m_doc.m_hRubyFont = m_sub_font; // 弱い参照
+        m_own_sub_font = true;
+    } else {
         OutputDebugStringA("CreateFontIndirect failed!\n");
         m_own_sub_font = false;
 
         // フォールバック：ベースフォントを使用
         m_doc.m_hBaseFont = m_font;
         m_doc.m_hRubyFont = m_font; // ← ベースフォントを代用
-    } else {
-        m_doc.m_hBaseFont = m_font; // 弱い参照
-        m_doc.m_hRubyFont = m_sub_font; // 弱い参照
     }
 
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
@@ -903,23 +904,35 @@ void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     assert(cx > 0 && cy > 0);
 
     // メモリDCの作成（ダブルバッファ）
-    HDC memDC = CreateCompatibleDC(dc); // DC作成
-    assert(memDC);
-    HBITMAP hbm = CreateCompatibleBitmap(dc, cx, cy); // ビットマップ作成
-    assert(hbm);
-    HGDIOBJ oldBmp = SelectObject(memDC, hbm); // ビットマップ選択
-    if (oldBmp) {
-        // 内部描画
-        paint_inner(hwnd, memDC, &rcClient);
-
-        // ビットブロットで画面へ転送
-        BitBlt(dc, 0, 0, cx, cy, memDC, 0, 0, SRCCOPY);
-
-        // 選択解除
-        SelectObject(memDC, oldBmp);
+    HDC memDC = ::CreateCompatibleDC(dc); // DC作成
+    if (!memDC) {
+        ::EndPaint(hwnd, &ps);
+        return;
     }
 
+    HBITMAP hbm = ::CreateCompatibleBitmap(dc, cx, cy); // ビットマップ作成
+    if (!hbm) {
+        ::DeleteDC(memDC);
+        ::EndPaint(hwnd, &ps);
+        return;
+    }
+
+    HGDIOBJ oldBmp = SelectObject(memDC, hbm); // ビットマップ選択
+    if (!oldBmp) {
+        ::DeleteObject(hbm);
+        ::DeleteDC(memDC);
+        ::EndPaint(hwnd, &ps);
+        return;
+    }
+
+    // 内部描画
+    paint_inner(hwnd, memDC, &rcClient);
+
+    // ビットブロットで画面へ転送
+    BitBlt(dc, 0, 0, cx, cy, memDC, 0, 0, SRCCOPY);
+
     // 後片付け
+    SelectObject(memDC, oldBmp);
     DeleteObject(hbm);
     DeleteDC(memDC);
 
@@ -958,7 +971,7 @@ void FuriganaCtl_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
 IMPLEMENT_DYNAMIC(FuriganaCtl);
 
 FuriganaCtl::FuriganaCtl() {
-    m_pimpl = new FuriganaCtl_impl(this);
+    m_pimpl = new(std::nothrow) FuriganaCtl_impl(this);
     if (!m_pimpl) {
         out_of_memory();
     }
