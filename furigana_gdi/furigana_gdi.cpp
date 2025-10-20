@@ -316,6 +316,17 @@ void TextDoc::set_selection(INT iStart, INT iEnd) {
 }
 
 /**
+ * パートの高さを取得する。
+ * @param iPart パートのインデックス。
+ */
+INT TextDoc::get_part_height(INT iPart) {
+    if (iPart <= 0 || iPart >= (INT)m_parts.size())
+        return 0;
+
+    return m_base_height + (m_parts[iPart].has_ruby() ? m_ruby_height : 0);
+}
+
+/**
  * 文書をクリアする。
  */
 void TextDoc::clear() {
@@ -390,9 +401,8 @@ void TextDoc::_update_parts_width() {
  * @return パートのインデックス。
  */
 INT TextDoc::hit_test(INT x, INT y) {
-    if (m_runs.empty()) {
+    if (m_runs.empty())
         update_runs();
-    }
 
     // 垂直方向
     INT current_y = 0;

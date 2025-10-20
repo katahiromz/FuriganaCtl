@@ -75,10 +75,14 @@ void FuriganaCtl_impl::update_scroll_info() {
     INT maxHorz = max(0, docW);
 
     SCROLLINFO si = { sizeof(si) };
-    si.fMask = SIF_PAGE | SIF_RANGE;
 
+    si.fMask = SIF_PAGE | SIF_RANGE;
     si.nPage = pageW;
     si.nMax = maxHorz;
+    if (si.nMax < (INT)si.nPage) {
+        si.fMask |= SIF_POS;
+        m_scroll_x = si.nPos = 0;
+    }
     ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
 
     // 縦スクロール設定: nMax は「コンテンツ高さ - ページ高さ」
@@ -87,9 +91,16 @@ void FuriganaCtl_impl::update_scroll_info() {
     INT maxVert = max(0, docH);
     DPRINTF(L"scroll info: %ld, %ld\n", pageH, docH);
 
+    si.fMask = SIF_PAGE | SIF_RANGE;
     si.nPage = pageH;
     si.nMax = maxVert;
+    if (si.nMax < (INT)si.nPage) {
+        si.fMask |= SIF_POS;
+        m_scroll_y = si.nPos = 0;
+    }
     ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
+
+    BaseTextBox_impl::invalidate();
 }
 
 // 無効にして再描画
@@ -100,8 +111,6 @@ void FuriganaCtl_impl::invalidate() {
     }
 
     update_scroll_info();
-
-    BaseTextBox_impl::invalidate();
 }
 
 // 描画フラグ群を取得
@@ -395,6 +404,8 @@ INT FuriganaCtl_impl::hit_test(INT x, INT y) {
 // iPart: パートインデックス（m_doc.m_parts のインデックス）
 void FuriganaCtl_impl::ensure_visible(INT iPart)
 {
+    if (iPart > 230)
+
     if (iPart < 0) iPart = 0;
     if (iPart >= (INT)m_doc.m_parts.size()) iPart = (INT)m_doc.m_parts.size();
 
@@ -416,7 +427,7 @@ void FuriganaCtl_impl::ensure_visible(INT iPart)
         return;
 
     if (iPart > m_doc.m_selection_end) {
-        pt.y += m_doc.m_base_height + m_doc.m_ruby_height;
+        pt.y += m_doc.get_part_height(iPart);
     }
 
     // run 高さとパート幅を取得（垂直スクロール調整に使用）

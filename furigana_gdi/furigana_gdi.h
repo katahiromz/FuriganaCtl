@@ -47,7 +47,7 @@ struct TextPart {
         m_part_width = -1;
         m_selected = false;
     }
-
+    bool has_ruby() const { return m_ruby_len > 0; }
     void update_width(TextDoc& doc);
 };
 
@@ -145,6 +145,7 @@ struct TextDoc {
     void get_ideal_size(LPRECT prc, UINT flags);
     INT update_runs();
     bool get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT flags);
+    INT get_part_height(INT iPart);
 
 protected:
     void _update_parts_height();
