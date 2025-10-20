@@ -103,8 +103,8 @@ struct TextDoc {
     HDC m_dc;
     INT m_base_height;
     INT m_ruby_height;
-    INT m_selection_start;
-    INT m_selection_end;
+    INT m_selection_start; // パートのインデックス。
+    INT m_selection_end; // パートのインデックス。
     INT m_para_width;
     INT m_para_height;
     INT m_max_width;
@@ -136,10 +136,10 @@ struct TextDoc {
     void add_text(const std::wstring& text);
     void clear();
     void set_selection(INT iStart, INT iEnd);
-    void update_selection();
     std::wstring get_selection_text();
     void set_dirty();
     void set_fonts(HFONT hBaseFont, HFONT hRubyFont);
+    void get_normalized_selection(INT& iStart, INT& iEnd);
 
     INT hit_test(INT x, INT y);
 

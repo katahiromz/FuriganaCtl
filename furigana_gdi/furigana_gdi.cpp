@@ -138,30 +138,6 @@ void TextDoc::set_fonts(HFONT hBaseFont, HFONT hRubyFont) {
 }
 
 /**
- * 段落の選択を更新する
- */
-void TextDoc::update_selection() {
-    std::vector<TextPart>& parts = m_parts;
-    INT iStart = m_selection_start;
-    INT iEnd = m_selection_end;
-    if (iStart == -1) {
-        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-            parts[iPart].m_selected = false;
-        }
-    } else {
-        if (iEnd == -1)
-            iEnd = (INT)parts.size();
-
-        if (iStart > iEnd)
-            std::swap(iStart, iEnd);
-
-        for (size_t iPart = 0; iPart < parts.size(); ++iPart) {
-            parts[iPart].m_selected = (iStart <= (INT)iPart && (INT)iPart < iEnd);
-        }
-    }
-}
-
-/**
  * 段落を追加する。
  * @param text テキスト文字列。
  */
@@ -453,16 +429,26 @@ INT TextDoc::hit_test(INT x, INT y) {
     return m_runs.back().m_part_index_end;
 }
 
+void TextDoc::get_normalized_selection(INT& iStart, INT& iEnd) {
+    if (iStart == -1 || iEnd == -1) {
+        iStart = iEnd = -1;
+        return;
+    }
+    INT start = min(m_selection_start, m_selection_end);
+    INT end = max(m_selection_start, m_selection_end);
+    iStart = start;
+    iEnd = end;
+}
+
 /**
  * 選択テキストを取得する。
  * @return 取得したテキスト文字列。
  */
 std::wstring TextDoc::get_selection_text() {
-    INT start = min(m_selection_start, m_selection_end);
-    INT end = max(m_selection_start, m_selection_end);
-
-    if (start < 0 || start >= (INT)m_parts.size() || end <= start)
-        return L"";
+    INT start = m_selection_start;
+    INT end = m_selection_end;
+    get_normalized_selection(start, end);
+    if (start == -1 || start == end) return L"";
 
     std::wstring text;
     for (INT iPart = start; iPart < end; ++iPart) {
@@ -592,6 +578,10 @@ void TextDoc::_draw_run(
     INT gap_threshold = get_text_width(hdc, L"漢i", 2);
     SelectObject(hdc, hFontOldForGap);
 
+    // 選択領域を種痘。
+    INT iStart = m_selection_start, iEnd = m_selection_end;
+    get_normalized_selection(iStart, iEnd);
+
     // パーツを順に処理し、計測または描画する
     for (INT iPart = run.m_part_index_start; iPart < run.m_part_index_end; ++iPart) {
         assert(0 <= iPart && iPart < (INT)m_parts.size());
@@ -602,7 +592,7 @@ void TextDoc::_draw_run(
 
         if (dc) {
             // 背景の塗りつぶし（選択状態ごとにブラシを使い分け） — ブラシは再利用
-            if (part.m_selected) {
+            if (iStart <= iPart && iPart < iEnd) {
                 SetTextColor(dc, colors[2]);
                 FillRect(dc, &rc, hBrushSel);
             } else {

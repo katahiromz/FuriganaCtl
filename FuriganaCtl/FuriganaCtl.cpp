@@ -478,7 +478,6 @@ void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, INT x, INT y,
 LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
     m_doc.m_selection_start = iStartSel;
     m_doc.m_selection_end = iEndSel;
-    m_doc.update_selection();
     invalidate();
     return TRUE;
 }
@@ -965,9 +964,6 @@ void FuriganaCtl_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
 
     // スクロールを反映する
     ::OffsetRect(&rc, -m_scroll_x, -m_scroll_y);
-
-    // 選択領域を更新
-    m_doc.update_selection();
 
     // 描画
     m_doc.draw_doc(dc, &rc, get_draw_flags(), m_colors);
