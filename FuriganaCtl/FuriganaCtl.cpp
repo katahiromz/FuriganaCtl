@@ -67,9 +67,7 @@ void FuriganaCtl_impl::update_scroll_info() {
 
     RECT rcIdeal = rc;
     m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
-    DPRINTF(L"get_ideal_size: %ld, %ld\n", rcIdeal.right - rcIdeal.left, rcIdeal.bottom - rcIdeal.top);
 
-    // 横スクロール設定: nMax は「コンテンツ幅 - ページ幅」
     INT pageW = max(0, rc.right - rc.left);
     INT docW  = max(0, rcIdeal.right - rcIdeal.left);
     INT maxHorz = max(0, docW);
@@ -79,26 +77,18 @@ void FuriganaCtl_impl::update_scroll_info() {
     si.fMask = SIF_PAGE | SIF_RANGE;
     si.nPage = pageW;
     si.nMax = maxHorz;
-    if (si.nMax < (INT)si.nPage) {
-        si.fMask |= SIF_POS;
-        m_scroll_x = si.nPos = 0;
-    }
     ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
+    m_scroll_x = ::GetScrollPos(m_hwnd, SB_HORZ);
 
-    // 縦スクロール設定: nMax は「コンテンツ高さ - ページ高さ」
     INT pageH = max(0, rc.bottom - rc.top);
     INT docH  = max(0, rcIdeal.bottom - rcIdeal.top);
     INT maxVert = max(0, docH);
-    DPRINTF(L"scroll info: %ld, %ld\n", pageH, docH);
 
     si.fMask = SIF_PAGE | SIF_RANGE;
     si.nPage = pageH;
     si.nMax = maxVert;
-    if (si.nMax < (INT)si.nPage) {
-        si.fMask |= SIF_POS;
-        m_scroll_y = si.nPos = 0;
-    }
     ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
+    m_scroll_y = ::GetScrollPos(m_hwnd, SB_VERT);
 
     BaseTextBox_impl::invalidate();
 }
