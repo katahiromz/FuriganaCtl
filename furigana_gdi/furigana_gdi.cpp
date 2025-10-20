@@ -195,7 +195,7 @@ void TextDoc::set_fonts(HFONT hBaseFont, HFONT hRubyFont) {
 
 /**
  * 段落を追加する。
- * @param text テキスト文字列。
+ * @param text コンパウンド テキスト文字列。
  */
 void TextDoc::_add_para(const std::wstring& text) {
     size_t ich = m_text.size();
