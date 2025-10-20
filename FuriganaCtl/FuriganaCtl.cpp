@@ -452,12 +452,9 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
     rc.right -= m_margin_rect.right;
     rc.bottom -= m_margin_rect.bottom;
 
-    // flags: シングルラインかどうか
-    DWORD flags = get_draw_flags();
-
     // doc のサイズ計算（描画計測）
     RECT rcIdeal = rc;
-    m_doc.get_ideal_size(&rcIdeal, flags);
+    m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
     INT doc_width = m_doc.m_para_width;
     INT doc_height = m_doc.m_para_height;
 
