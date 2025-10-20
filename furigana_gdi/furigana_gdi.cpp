@@ -401,6 +401,10 @@ INT TextDoc::hit_test(INT x, INT y) {
     INT current_y = 0;
     size_t iRun;
     for (iRun = 0; iRun < m_runs.size(); ++iRun) {
+        if (iRun > 0) {
+            current_y += m_line_gap;
+        }
+
         const TextRun& run = m_runs[iRun];
         if (y < current_y + run.m_run_height)
             break;
