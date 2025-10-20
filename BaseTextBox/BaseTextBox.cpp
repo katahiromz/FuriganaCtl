@@ -24,7 +24,7 @@ void BaseTextBox_impl::invalidate() {
 
 // WM_CREATE
 BOOL BaseTextBox_impl::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
-    m_hwnd = hwnd;
+    assert(hwnd == m_hwnd);
     m_hwndParent = ::GetParent(hwnd);
 
     LOGFONTW lf;
@@ -75,7 +75,7 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 // WM_GETTEXT
 INT BaseTextBox_impl::OnGetText(HWND hwnd, INT cchTextMax, LPTSTR lpszText) {
     if (!m_text) {
-        if (cchTextMax > 0) lpszText[0] = 0;
+        if (cchTextMax > 0 && lpszText) lpszText[0] = 0;
         return 0;
     }
     lstrcpynW(lpszText, m_text, cchTextMax);
@@ -94,7 +94,7 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
     INT text_len = lstrlenW(lpszText);
     INT required_capacity = text_len + 1;
 
-    if (m_text_capacity >= 8 * required_capacity) {
+    if (m_text_capacity > 8 * required_capacity) {
         delete[] m_text;
         m_text = new(std::nothrow) wchar_t[required_capacity];
         if (!m_text) {
@@ -215,6 +215,7 @@ BaseTextBox::window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
                 out_of_memory();
                 return FALSE;
             }
+            self->m_hwnd = hwnd;
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)self);
         } else {
             return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
