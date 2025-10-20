@@ -120,14 +120,14 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
     invalidate();
 }
 
-void BaseTextBox_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect) {
+void BaseTextBox_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
     HGDIOBJ old_font = NULL;
     if (m_font)
         old_font = ::SelectObject(dc, m_font);
 
     INT old_mode = ::SetBkMode(dc, TRANSPARENT);
     ::SetTextColor(dc, ::GetSysColor(COLOR_WINDOWTEXT));
-    ::DrawText(dc, m_text, m_text_length, client_rect,
+    ::DrawText(dc, m_text, m_text_length, rect,
                DT_LEFT | DT_TOP | DT_EXPANDTABS | DT_WORDBREAK);
     ::SetBkMode(dc, old_mode);
 
@@ -145,10 +145,10 @@ void BaseTextBox_impl::paint_client(HWND hwnd, HDC hDC) {
     if (!dc)
         return;
 
-    RECT client_rect;
-    ::GetClientRect(hwnd, &client_rect);
+    RECT rect;
+    ::GetClientRect(hwnd, &rect);
 
-    paint_client_inner(hwnd, dc, &client_rect);
+    paint_inner(hwnd, dc, &rect);
 
     if (!hDC)
         ::EndPaint(hwnd, &ps);

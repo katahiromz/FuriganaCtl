@@ -67,11 +67,12 @@ void FuriganaCtl_impl::update_scroll_info() {
 
     RECT rcIdeal = rc;
     m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
+    DPRINTF(L"get_ideal_size: %ld, %ld\n", rcIdeal.right - rcIdeal.left, rcIdeal.bottom - rcIdeal.top);
 
     // 横スクロール設定: nMax は「コンテンツ幅 - ページ幅」
     INT pageW = max(0, rc.right - rc.left);
     INT docW  = max(0, rcIdeal.right - rcIdeal.left);
-    INT maxHorz = max(0, docW - pageW);
+    INT maxHorz = max(0, docW);
 
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_PAGE | SIF_RANGE;
@@ -83,7 +84,8 @@ void FuriganaCtl_impl::update_scroll_info() {
     // 縦スクロール設定: nMax は「コンテンツ高さ - ページ高さ」
     INT pageH = max(0, rc.bottom - rc.top);
     INT docH  = max(0, rcIdeal.bottom - rcIdeal.top);
-    INT maxVert = max(0, docH - pageH);
+    INT maxVert = max(0, docH);
+    DPRINTF(L"scroll info: %ld, %ld\n", pageH, docH);
 
     si.nPage = pageH;
     si.nMax = maxVert;
@@ -518,10 +520,10 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     }
 
     if (nPos != si.nPos) {
+        m_scroll_x = nPos;
         si.fMask = SIF_POS;
         si.nPos = nPos;
         ::SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-        m_scroll_x = nPos;
         invalidate();
     }
 }
@@ -563,10 +565,10 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     }
 
     if (nPos != si.nPos) {
+        m_scroll_y = nPos;
         si.fMask = SIF_POS;
         si.nPos = nPos;
         ::SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
-        m_scroll_y = nPos;
         invalidate();
     }
 }
@@ -589,7 +591,7 @@ void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     HBITMAP hbm = CreateCompatibleBitmap(dc, cx, cy);
     HGDIOBJ oldBmp = SelectObject(memDC, hbm);
 
-    paint_client_inner(hwnd, memDC, &rcClient);
+    paint_inner(hwnd, memDC, &rcClient);
 
     // ビットブロットで画面へ転送
     BitBlt(dc, 0, 0, cx, cy, memDC, 0, 0, SRCCOPY);
@@ -602,9 +604,9 @@ void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     ::EndPaint(hwnd, &ps);
 }
 
-// クライアント領域を描画する
-void FuriganaCtl_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect) {
-    RECT rc = *client_rect;
+// 描画する
+void FuriganaCtl_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
+    RECT rc = *rect;
 
     // 背景を塗りつぶす
     HBRUSH hBrush = ::CreateSolidBrush(m_colors[1]);
@@ -617,8 +619,8 @@ void FuriganaCtl_impl::paint_client_inner(HWND hwnd, HDC dc, RECT *client_rect) 
     rc.right -= m_margin_rect.right;
     rc.bottom -= m_margin_rect.bottom;
 
-    // スクロールを反映するためにビューポート原点を移す（負値）
-    ::SetViewportOrgEx(dc, -m_scroll_x, -m_scroll_y, NULL);
+    // スクロールを反映する
+    ::OffsetRect(&rc, -m_scroll_x, -m_scroll_y);
 
     // 選択領域を更新
     m_doc.update_selection();
