@@ -133,7 +133,7 @@ LRESULT FuriganaCtl_impl::OnSetMargin(LPRECT prc) {
 
 // FC_SETCOLOR
 LRESULT FuriganaCtl_impl::OnSetColor(INT iColor, COLORREF rgbColor) {
-    if (iColor < 0 || iColor >= 4)
+    if (iColor < 0 || iColor >= _countof(m_colors))
         return FALSE;
 
     if (rgbColor == CLR_INVALID) {

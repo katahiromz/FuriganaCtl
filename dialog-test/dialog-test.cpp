@@ -12,7 +12,7 @@ void SetAlign(HWND hwnd, DWORD align)
 
     bool center = false;
     bool right = true;
-    DWORD style = GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
+    DWORD style = (DWORD)GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
     style &= ~(ES_CENTER | ES_RIGHT);
     if (align & ES_CENTER) style |= ES_CENTER;
     if (align & ES_RIGHT) style |= ES_RIGHT;
@@ -35,7 +35,7 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     SendMessageW(hwndEdt2, FC_SETCOLOR, 1, RGB(255, 255, 0));
 
     bool multi = true;
-    DWORD style = GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
+    DWORD style = (DWORD)GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
     if (multi) style |= ES_MULTILINE;
     SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
 

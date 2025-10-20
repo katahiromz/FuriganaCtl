@@ -12,10 +12,10 @@
  * @param len テキストの長さ。
  * @return テキストの幅。
  */
-static INT get_text_width(HDC dc, LPCWSTR text, INT len) {
+static INT get_text_width(HDC dc, LPCWSTR text, size_t len) {
     if (len <= 0) return 0;
     SIZE size = {0};
-    GetTextExtentPoint32W(dc, text, len, &size);
+    GetTextExtentPoint32W(dc, text, (INT)len, &size);
     return size.cx;
 }
 
@@ -202,7 +202,7 @@ void TextDoc::_add_para(const std::wstring& text) {
     m_text += text;
 
     TextPara para;
-    para.m_part_index_start = m_parts.size();
+    para.m_part_index_start = (INT)m_parts.size();
 
     bool has_ruby = false;
     while (ich < m_text.length()) {
@@ -268,7 +268,7 @@ void TextDoc::_add_para(const std::wstring& text) {
         // 英単語なら、ワードラップのため、単語ごとパートにする。
         if (is_ascii_word_char(m_text[ich])) {
             size_t start = ich;
-            INT end = find_word_boundary(m_text, ich, (INT)m_text.size(), +1);
+            INT end = find_word_boundary(m_text, (INT)ich, (INT)m_text.size(), +1);
             ich = end;
 
             TextPart part;
@@ -299,7 +299,7 @@ void TextDoc::_add_para(const std::wstring& text) {
         m_parts.push_back(part);
     }
 
-    para.m_part_index_end = m_parts.size();
+    para.m_part_index_end = (INT)m_parts.size();
     m_paras.push_back(para);
 }
 
@@ -573,8 +573,8 @@ INT TextDoc::update_runs() {
         // 改行文字は必ず区切り
         if (part.m_text == L"\n") {
             TextRun run;
-            run.m_part_index_start = iPart0;
-            run.m_part_index_end = iPart;
+            run.m_part_index_start = (INT)iPart0;
+            run.m_part_index_end = (INT)iPart;
             run.m_run_width = run_width;
             m_runs.push_back(run);
 
@@ -605,7 +605,7 @@ INT TextDoc::update_runs() {
             if (is_kinsoku_head(nextCh)) {
                 // 現行に少なくとも2パートある（1つしかないと移動で空行になる）
                 if ((INT)(iPart - iPart0) >= 2) {
-                    INT lastIdx = iPart - 1;
+                    INT lastIdx = (INT)iPart - 1;
                     INT lastWidth = m_parts[lastIdx].m_part_width;
                     INT new_curr_run_width = run_width - lastWidth; // 現行幅から末尾を除く
                     INT next_line_width = lastWidth + part_width;   // 次行に入る幅（末尾 + 今のパート）
@@ -614,7 +614,7 @@ INT TextDoc::update_runs() {
                     if (next_line_width <= m_max_width) {
                         // 現行を末尾を除いて確定
                         TextRun run;
-                        run.m_part_index_start = iPart0;
+                        run.m_part_index_start = (INT)iPart0;
                         run.m_part_index_end = lastIdx; // exclusive
                         run.m_run_width = new_curr_run_width;
                         m_runs.push_back(run);
@@ -633,14 +633,14 @@ INT TextDoc::update_runs() {
             // (2) 直前が行末禁則文字なら -> 同様に末尾1パートを次行へ移す試み
             if (!handled && is_kinsoku_tail(prevCh)) {
                 if ((INT)(iPart - iPart0) >= 2) {
-                    INT lastIdx = iPart - 1;
+                    INT lastIdx = (INT)iPart - 1;
                     INT lastWidth = m_parts[lastIdx].m_part_width;
                     INT new_curr_run_width = run_width - lastWidth;
                     INT next_line_width = lastWidth + part_width;
 
                     if (next_line_width <= m_max_width) {
                         TextRun run;
-                        run.m_part_index_start = iPart0;
+                        run.m_part_index_start = (INT)iPart0;
                         run.m_part_index_end = lastIdx;
                         run.m_run_width = new_curr_run_width;
                         m_runs.push_back(run);
@@ -657,8 +657,8 @@ INT TextDoc::update_runs() {
             if (!handled) {
                 // 移動できなければ通常の改行（この場合、次行の先頭が禁則文字になる可能性あり）
                 TextRun run;
-                run.m_part_index_start = iPart0;
-                run.m_part_index_end = iPart;
+                run.m_part_index_start = (INT)iPart0;
+                run.m_part_index_end = (INT)iPart;
                 run.m_run_width = run_width;
                 m_runs.push_back(run);
 
@@ -676,8 +676,8 @@ INT TextDoc::update_runs() {
 
     // 折り返しの残りのパーツのランを追加
     TextRun run;
-    run.m_part_index_start = iPart0;
-    run.m_part_index_end = iPart;
+    run.m_part_index_start = (INT)iPart0;
+    run.m_part_index_end = (INT)iPart;
     run.m_run_width = run_width;
     m_runs.push_back(run);
 
@@ -771,7 +771,7 @@ void TextDoc::_draw_run(
             case TextPart::NORMAL:
                 {
                     HGDIOBJ hOld = SelectObject(dc, m_hBaseFont);
-                    ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
+                    ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], (INT)part.m_base_len, NULL);
                     SelectObject(dc, hOld);
                 }
                 break;
@@ -788,7 +788,7 @@ void TextDoc::_draw_run(
                     if (part.m_part_width - part.m_ruby_width > m_gap_threshold) {
                         // 両端ぞろえ
                         if (part.m_ruby_len > 1) {
-                            ruby_extra = (part.m_part_width - part.m_ruby_width) / (part.m_ruby_len - 1);
+                            ruby_extra = (part.m_part_width - part.m_ruby_width) / ((INT)part.m_ruby_len - 1);
                         }
                     } else {
                         // パート内で中央ぞろえ
@@ -798,13 +798,13 @@ void TextDoc::_draw_run(
 
                     // ベーステキストの描画
                     HGDIOBJ hOldBase = SelectObject(dc, m_hBaseFont);
-                    ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], part.m_base_len, NULL);
+                    ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], (INT)part.m_base_len, NULL);
                     SelectObject(dc, hOldBase);
 
                     // ルビテキストの描画
                     HGDIOBJ hOldRuby = SelectObject(dc, m_hRubyFont);
                     INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-                    ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], part.m_ruby_len, NULL);
+                    ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], (INT)part.m_ruby_len, NULL);
                     SetTextCharacterExtra(dc, old_extra_ruby);
                     SelectObject(dc, hOldRuby);
                 }
