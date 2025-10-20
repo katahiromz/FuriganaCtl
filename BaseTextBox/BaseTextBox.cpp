@@ -19,6 +19,7 @@ static inline void out_of_memory() {
 #include "BaseTextBox_impl.h"
 
 void BaseTextBox_impl::invalidate() {
+    assert(m_hwnd);
     ::InvalidateRect(m_hwnd, NULL, FALSE);
 }
 
@@ -180,10 +181,12 @@ BaseTextBox::~BaseTextBox() {
 }
 
 DWORD BaseTextBox::get_style() const {
+    assert(m_pimpl && m_pimpl->m_hwnd);
     return (DWORD)::GetWindowLongPtrW(m_pimpl->m_hwnd, GWL_STYLE);
 }
 
 DWORD BaseTextBox::get_exstyle() const {
+    assert(m_pimpl && m_pimpl->m_hwnd);
     return (DWORD)::GetWindowLongPtrW(m_pimpl->m_hwnd, GWL_EXSTYLE);
 }
 
