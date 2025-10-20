@@ -127,10 +127,18 @@ void TextRun::update_width(TextDoc& doc) {
 /////////////////////////////////////////////////////////////////////////////
 // TextDoc
 
+/**
+ * 「汚い」フラグを立てる。このフラグが立っているときは、update_run()が必要。
+ */
 void TextDoc::set_dirty() {
     m_layout_dirty = true;
 }
 
+/**
+ * フォントをセットして汚いフラグを立てる。
+ * @param hBaseFont ベーステキストのフォント。弱い参照。
+ * @param hRubyFont ルビテキストのフォント。弱い参照。
+ */
 void TextDoc::set_fonts(HFONT hBaseFont, HFONT hRubyFont) {
     m_hBaseFont = hBaseFont;
     m_hRubyFont = hRubyFont;
@@ -429,6 +437,12 @@ INT TextDoc::hit_test(INT x, INT y) {
     return m_runs.back().m_part_index_end;
 }
 
+/**
+ * 選択領域を表すインデックス区間を普通にする。
+ * 関数は、iStart <= iEndを満たすように整数値を変更する。
+ * @param iStart 開始のパートインデックス。
+ * @param iEnd 終了のパートインデックス。
+ */
 void TextDoc::get_normalized_selection(INT& iStart, INT& iEnd) {
     if (iStart == -1 || iEnd == -1) {
         iStart = iEnd = -1;
