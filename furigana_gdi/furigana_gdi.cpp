@@ -127,6 +127,16 @@ void TextRun::update_width(TextDoc& doc) {
 /////////////////////////////////////////////////////////////////////////////
 // TextDoc
 
+void TextDoc::set_dirty() {
+    m_layout_dirty = true;
+}
+
+void TextDoc::set_fonts(HFONT hBaseFont, HFONT hRubyFont) {
+    m_hBaseFont = hBaseFont;
+    m_hRubyFont = hRubyFont;
+    set_dirty();
+}
+
 /**
  * 段落の選択を更新する
  */
@@ -327,6 +337,14 @@ void TextDoc::clear() {
     m_parts.clear();
     m_runs.clear();
     m_paras.clear();
+    set_dirty();
+
+    m_base_height = 0;
+    m_ruby_height = 0;
+    m_selection_start = -1;
+    m_selection_end = 0;
+    m_para_width = 0;
+    m_para_height = 0;
 }
 
 /**
@@ -359,6 +377,8 @@ void TextDoc::add_text(const std::wstring& text) {
             m_text += L"\n";
         }
     }
+
+    set_dirty();
 }
 
 /**
@@ -678,7 +698,10 @@ void TextDoc::draw_doc(
 
     m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : (prc->right - prc->left);
 
-    update_runs();
+    if (m_layout_dirty) {
+        update_runs();
+        m_layout_dirty = false;
+    }
 
     INT current_y = prc->top;
     INT max_run_width = 0;

@@ -113,6 +113,7 @@ struct TextDoc {
     INT m_ruby_ratio_div;
     HFONT m_hBaseFont;
     HFONT m_hRubyFont;
+    bool m_layout_dirty;
 
     TextDoc() {
         m_dc = CreateCompatibleDC(NULL);
@@ -126,6 +127,7 @@ struct TextDoc {
         m_line_gap = 2;
         m_hBaseFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
         m_hRubyFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
+        m_layout_dirty = true;
     }
     ~TextDoc() {
         DeleteDC(m_dc);
@@ -136,6 +138,8 @@ struct TextDoc {
     void set_selection(INT iStart, INT iEnd);
     void update_selection();
     std::wstring get_selection_text();
+    void set_dirty();
+    void set_fonts(HFONT hBaseFont, HFONT hRubyFont);
 
     INT hit_test(INT x, INT y);
 

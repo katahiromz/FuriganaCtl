@@ -174,16 +174,13 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
     m_sub_font = ::CreateFontIndirect(&lf);
     if (m_sub_font) {
-        m_doc.m_hBaseFont = m_font; // 弱い参照
-        m_doc.m_hRubyFont = m_sub_font; // 弱い参照
+        m_doc.set_fonts(m_font, m_sub_font); // 弱い参照
         m_own_sub_font = true;
     } else {
         OutputDebugStringA("CreateFontIndirect failed!\n");
         m_own_sub_font = false;
-
         // フォールバック：ベースフォントを使用
-        m_doc.m_hBaseFont = m_font;
-        m_doc.m_hRubyFont = m_font; // ← ベースフォントを代用
+        m_doc.set_fonts(m_font, m_font); // 弱い参照
     }
 
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);

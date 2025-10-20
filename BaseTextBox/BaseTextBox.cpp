@@ -97,7 +97,7 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
     INT text_len = lstrlenW(lpszText);
     INT required_capacity = text_len + 1;
 
-    if (m_text_capacity > 8 * required_capacity) {
+    if (m_text_capacity > required_capacity * 4 && m_text_capacity > 4096) {
         delete[] m_text;
         m_text = new(std::nothrow) wchar_t[required_capacity];
         if (!m_text) {
@@ -108,14 +108,18 @@ void BaseTextBox_impl::OnSetText(HWND hwnd, LPCTSTR lpszText) {
         m_text_capacity = required_capacity;
     } else if (required_capacity > m_text_capacity) {
         delete[] m_text;
-        const INT extra = 1024;
-        m_text = new(std::nothrow) wchar_t[required_capacity + extra];
+        INT new_capacity = required_capacity + (required_capacity / 2); // 1.5”{¬’·
+        const INT min_extra = 1024; // ­‚È‚­‚Æ‚à1024•¶š‚Í—]•ª‚ÉŠm•Û
+        if (new_capacity < required_capacity + min_extra) {
+            new_capacity = required_capacity + min_extra;
+        }
+        m_text = new(std::nothrow) wchar_t[new_capacity];
         if (!m_text) {
             out_of_memory();
             m_text_length = m_text_capacity = 0;
             return;
         }
-        m_text_capacity = required_capacity + extra;
+        m_text_capacity = new_capacity;
     }
 
     lstrcpynW(m_text, lpszText, required_capacity);
