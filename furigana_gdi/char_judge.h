@@ -38,3 +38,6 @@ size_t skip_one_real_char(const std::wstring& str, size_t& ich);
 size_t skip_kanji_chars(const std::wstring& str, size_t& ich);
 size_t skip_kana_chars(const std::wstring& str, size_t& ich);
 UINT decode_surrogate_pair(wchar_t highSurrogate, wchar_t lowSurrogate);
+bool is_ascii_word_char(wchar_t ch);
+bool is_space_char(wchar_t ch);
+INT find_word_boundary(const std::wstring& text, INT index, INT count, INT action);

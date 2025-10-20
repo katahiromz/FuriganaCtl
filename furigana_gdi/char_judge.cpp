@@ -99,3 +99,48 @@ size_t skip_kana_chars(const std::wstring& str, size_t& ich) {
 
     return ret;
 }
+
+// 単語境界を検出する簡易関数
+bool is_ascii_word_char(wchar_t ch) {
+    // 英数字・アンダースコア・アポストロフィ・ハイフンなど
+    return (ch >= L'a' && ch <= L'z') || (ch >= L'A' && ch <= L'Z') || (ch >= L'0' && ch <= L'9') ||
+           ch == L'-' || ch == L'\'' || ch == L'_';
+}
+
+bool is_space_char(wchar_t ch) {
+    return ch == L' ' || ch == L'\t' || ch == L'\r' || ch == L'\n';
+}
+
+/**
+ * find_word_boundary
+ * 現在のインデックス index から単語の末尾（または先頭）を探す。
+ *  action = +1 → 次の単語の末尾
+ *  action = -1 → 前の単語の先頭
+ *  count = 全体の文字数
+ */
+INT find_word_boundary(const std::wstring& text, INT index, INT count, INT action)
+{
+    if (index < 0 || index >= count) return index;
+
+    if (action > 0) {
+        // 次の単語末尾を探す
+        bool inWord = is_ascii_word_char(text[index]);
+        while (index < count) {
+            bool now = is_ascii_word_char(text[index]);
+            if (inWord && !now) break;
+            if (!inWord && now) break;
+            index++;
+        }
+    } else {
+        // 前の単語先頭を探す
+        bool inWord = is_ascii_word_char(text[index]);
+        while (index > 0) {
+            bool now = is_ascii_word_char(text[index - 1]);
+            if (inWord && !now) break;
+            if (!inWord && now) break;
+            index--;
+        }
+    }
+
+    return index;
+}

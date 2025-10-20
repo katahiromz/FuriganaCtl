@@ -259,6 +259,26 @@ void TextDoc::_add_para(const std::wstring& text) {
             ich = ich0;
         }
 
+        // 英単語の連続なら、ワードラップのため、単語ごとパートにする。
+        if (is_ascii_word_char(m_text[ich])) {
+            size_t start = ich;
+            INT end = find_word_boundary(m_text, ich, (INT)m_text.size(), +1);
+            ich = end;
+
+            TextPart part;
+            part.m_type = TextPart::NORMAL;
+            part.m_start_index = start;
+            part.m_end_index = ich;
+            part.m_text = m_text.substr(start, end - start);
+            part.m_base_index = start;
+            part.m_base_len = end - start;
+            part.m_ruby_index = 0;
+            part.m_ruby_len = 0;
+            m_parts.push_back(part);
+            continue;
+        }
+
+        // その他は一文字ずつ
         size_t char_index = ich;
         size_t char_len = skip_one_real_char(m_text, ich);
         TextPart part;
