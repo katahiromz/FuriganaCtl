@@ -35,8 +35,7 @@ static const COLORREF *get_default_colors() {
 
 #ifndef NO_KINSOKU // 禁則処理をするか？
 
-static bool is_kinsoku_head(wchar_t ch)
-{
+static bool is_kinsoku_head(wchar_t ch) {
     static const wchar_t head[] = L"、。，．)]｝〕〉》」』】〙〗〟’”ゝゞ々ぁぃぅぇぉっゃゅょァィゥェォッャュョヮヵヶー゛゜？！";
     const wchar_t *pch = head;
     while (*pch) {
@@ -47,8 +46,7 @@ static bool is_kinsoku_head(wchar_t ch)
     return false;
 }
 
-static bool is_kinsoku_tail(wchar_t ch)
-{
+static bool is_kinsoku_tail(wchar_t ch) {
     static const wchar_t tail[] = L"([｛〔〈《「『【〘〖〝‘“（";
     const wchar_t *pch = tail;
     while (*pch) {

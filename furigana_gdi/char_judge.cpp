@@ -118,8 +118,7 @@ bool is_space_char(wchar_t ch) {
  *  action = -1 → 前の単語の先頭
  *  count = 全体の文字数
  */
-INT find_word_boundary(const std::wstring& text, INT index, INT count, INT action)
-{
+INT find_word_boundary(const std::wstring& text, INT index, INT count, INT action) {
     if (index < 0 || index >= count) return index;
 
     if (action > 0) {
