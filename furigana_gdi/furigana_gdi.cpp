@@ -206,12 +206,18 @@ void TextDoc::_add_para(const std::wstring& text) {
 
     bool has_ruby = false;
     while (ich < m_text.length()) {
-        // "{ベーステキスト(ルビテキスト)}"
         if (m_text[ich] == L'{') {
-            intptr_t paren_start = m_text.find(L'(', ich);
-            if (paren_start != m_text.npos) {
-                intptr_t furigana_end = m_text.find(L")}", paren_start);
-                if (furigana_end != m_text.npos) {
+            // "{}"
+            if (ich + 1 < m_text.length() && m_text[ich + 1] == L'}') {
+                ich += 2;
+                continue;
+            }
+
+            // "{ベーステキスト(ルビテキスト)}"
+            intptr_t furigana_end = m_text.find(L")}", ich);
+            if (furigana_end != m_text.npos) {
+                intptr_t paren_start = m_text.rfind(L'(', furigana_end);
+                if (paren_start != m_text.npos) {
                     TextPart part;
                     part.m_type = TextPart::RUBY;
                     part.m_start_index = ich;
@@ -259,7 +265,7 @@ void TextDoc::_add_para(const std::wstring& text) {
             ich = ich0;
         }
 
-        // 英単語の連続なら、ワードラップのため、単語ごとパートにする。
+        // 英単語なら、ワードラップのため、単語ごとパートにする。
         if (is_ascii_word_char(m_text[ich])) {
             size_t start = ich;
             INT end = find_word_boundary(m_text, ich, (INT)m_text.size(), +1);
