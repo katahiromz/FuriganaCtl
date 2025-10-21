@@ -18,8 +18,6 @@ void SetAlign(HWND hwnd, DWORD align)
     if (align & ES_RIGHT) style |= ES_RIGHT;
 
     SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
-
-    InvalidateRect(hwndEdt2, NULL, TRUE);
 }
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)

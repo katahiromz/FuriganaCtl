@@ -139,11 +139,11 @@ struct TextDoc {
     void set_fonts(HFONT hBaseFont, HFONT hRubyFont);
     void get_normalized_selection(INT& iStart, INT& iEnd);
 
-    INT hit_test(INT x, INT y);
+    INT hit_test(INT x, INT y, UINT flags);
 
     void draw_doc(HDC dc, LPRECT prc, UINT flags, const COLORREF *colors = NULL);
     void get_ideal_size(LPRECT prc, UINT flags);
-    INT update_runs();
+    INT update_runs(UINT flags);
     bool get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT flags);
     INT get_part_height(INT iPart);
 
