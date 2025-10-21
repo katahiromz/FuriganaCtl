@@ -197,14 +197,10 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
 
 // WM_SETFONT
 void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
-    if (!hfont) {
-        assert(0);
+    if (!hfont)
         return;
-    }
-    if (!m_doc.m_ruby_ratio_div) {
-        assert(0);
+    if (!m_doc.m_ruby_ratio_div)
         return;
-    }
 
     LOGFONT lf;
     ::GetObject(hfont, sizeof(lf), &lf);
@@ -226,6 +222,12 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     }
 
     BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
+}
+
+// WM_STYLECHANGED
+void FuriganaCtl_impl::OnStyleChanged(HWND hwnd) {
+    m_doc.set_dirty();
+    invalidate();
 }
 
 // WM_KEYDOWN, WM_KEYUP

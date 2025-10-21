@@ -1,4 +1,4 @@
-# FuriganaCtl の開発履歴
+﻿﻿# FuriganaCtl の開発履歴
 
 - 2025-10-21 Ver.1.0
     - 初公開。
