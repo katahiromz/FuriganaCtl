@@ -583,6 +583,7 @@ INT TextDoc::update_runs() {
             run.m_part_index_start = (INT)iPart0;
             run.m_part_index_end = (INT)iPart;
             run.m_run_width = run_width;
+            run.m_max_width = m_max_width;
             m_runs.push_back(run);
 
             // 次パートは改行の次から開始
@@ -624,6 +625,7 @@ INT TextDoc::update_runs() {
                         run.m_part_index_start = (INT)iPart0;
                         run.m_part_index_end = lastIdx; // exclusive
                         run.m_run_width = new_curr_run_width;
+                        run.m_max_width = m_max_width;
                         m_runs.push_back(run);
 
                         // 次行の開始位置を lastIdx にして、current_x/run_width を lastWidth にする
@@ -650,6 +652,7 @@ INT TextDoc::update_runs() {
                         run.m_part_index_start = (INT)iPart0;
                         run.m_part_index_end = lastIdx;
                         run.m_run_width = new_curr_run_width;
+                        run.m_max_width = m_max_width;
                         m_runs.push_back(run);
 
                         iPart0 = lastIdx;
@@ -667,6 +670,7 @@ INT TextDoc::update_runs() {
                 run.m_part_index_start = (INT)iPart0;
                 run.m_part_index_end = (INT)iPart;
                 run.m_run_width = run_width;
+                run.m_max_width = m_max_width;
                 m_runs.push_back(run);
 
                 iPart0 = iPart;
@@ -686,6 +690,7 @@ INT TextDoc::update_runs() {
     run.m_part_index_start = (INT)iPart0;
     run.m_part_index_end = (INT)iPart;
     run.m_run_width = run_width;
+    run.m_max_width = m_max_width;
     m_runs.push_back(run);
 
     // 各ランの高さを計算する
