@@ -68,6 +68,7 @@ void FuriganaCtl_impl::update_scroll_info() {
 
     RECT rcIdeal = rc;
     m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
+    DPRINTF(L"ideal_size: %ld, %ld\n", rcIdeal.right - rcIdeal.left, rcIdeal.bottom - rcIdeal.top);
 
     INT pageW = max(0, INT(rc.right - rc.left));
     INT docW  = max(0, INT(rcIdeal.right - rcIdeal.left));

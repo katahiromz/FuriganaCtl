@@ -356,7 +356,7 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
 
         // run の vertical span: [current_y, current_y + run.m_run_height)
         if ((run.m_part_index_start <= iPart && iPart < run.m_part_index_end) ||
-             (run.m_part_index_start == run.m_part_index_end && run.m_part_index_start == iPart)
+             (run.m_part_index_start == run.m_part_index_end && run.m_part_index_start == iPart))
         {
             // 水平方向の位置を計算
             INT current_x = 0;
