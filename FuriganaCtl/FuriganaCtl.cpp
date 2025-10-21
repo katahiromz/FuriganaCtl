@@ -206,9 +206,12 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     ::GetObject(hfont, sizeof(lf), &lf);
     lf.lfHeight *= m_doc.m_ruby_ratio_mul;
     lf.lfHeight /= m_doc.m_ruby_ratio_div;
+    lf.lfQuality = ANTIALIASED_QUALITY;
 
     if (m_own_sub_font && m_sub_font)
         ::DeleteObject(m_sub_font);
+
+    BaseTextBox_impl::OnSetFont(hwndCtl, hfont, FALSE);
 
     m_sub_font = ::CreateFontIndirect(&lf);
     if (m_sub_font) {
@@ -220,8 +223,6 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
         // フォールバック：ベースフォントを使用
         m_doc.set_fonts(m_font, m_font); // 弱い参照
     }
-
-    BaseTextBox_impl::OnSetFont(hwndCtl, hfont, fRedraw);
 }
 
 // WM_STYLECHANGED

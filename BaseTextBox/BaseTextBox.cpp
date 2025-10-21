@@ -61,11 +61,14 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (m_own_font && m_font)
         ::DeleteObject(m_font);
 
-    m_font = hfont;
-    m_own_font = false;
+    LOGFONTW lf;
+    GetObjectW(hfont, sizeof(lf), &lf);
+    lf.lfQuality = ANTIALIASED_QUALITY;
 
-    if (fRedraw)
-        invalidate();
+    m_font = ::CreateFontIndirectW(&lf);
+    m_own_font = true;
+
+    invalidate();
 }
 
 // WM_GETTEXT

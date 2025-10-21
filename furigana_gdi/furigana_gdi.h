@@ -150,6 +150,7 @@ struct TextDoc {
 protected:
     void _update_parts_height();
     void _update_parts_width();
+    void ensure_layout(UINT flags);
 
     void _draw_run(
         HDC dc,

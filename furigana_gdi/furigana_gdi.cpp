@@ -345,10 +345,7 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
     // m_max_width を設定してランを更新
     m_max_width = ((flags & DT_SINGLELINE) && !(flags & (DT_RIGHT | DT_CENTER))) ? MAXLONG : layout_width;
 
-    if (m_layout_dirty) {
-        update_runs(flags);
-        m_layout_dirty = false;
-    }
+    ensure_layout(flags);
 
     // ランごとの m_delta_x を計算（draw_doc と同じ方式）
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
@@ -500,10 +497,7 @@ void TextDoc::_update_parts_width() {
  * @return パートのインデックス。
  */
 INT TextDoc::hit_test(INT x, INT y, UINT flags) {
-    if (m_layout_dirty) {
-        update_runs(flags);
-        m_layout_dirty = false;
-    }
+    ensure_layout(flags);
 
     if (m_runs.empty() || y < 0) return 0;
 
@@ -706,8 +700,7 @@ INT TextDoc::update_runs(UINT flags) {
 
                 iPart0 = iPart;
                 current_x = run_width = 0;
-                // 続行して現在の part を次行で処理する（for の ++ により iPart が増えるが現在は処理済み、
-                // ここでは continue せず loop 続行で current_x が 0 の状態で次へ積む）
+                continue;
             }
         }
 
@@ -888,10 +881,7 @@ void TextDoc::draw_doc(
 
     m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : (prc->right - prc->left);
 
-    if (m_layout_dirty) {
-        update_runs(flags);
-        m_layout_dirty = false;
-    }
+    ensure_layout(flags);
 
     INT current_y = prc->top;
     INT max_run_width = 0;
@@ -929,4 +919,11 @@ void TextDoc::get_ideal_size(LPRECT prc, UINT flags)
 {
     assert(prc);
     draw_doc(NULL, prc, flags, NULL);
+}
+
+void TextDoc::ensure_layout(UINT flags) {
+    if (m_layout_dirty) {
+        update_runs(flags);
+        m_layout_dirty = false;
+    }
 }
