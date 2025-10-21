@@ -556,13 +556,14 @@ INT TextDoc::hit_test(INT x, INT y) {
  * @param iEnd 終了のパートインデックスまたは-1。
  */
 void TextDoc::get_normalized_selection(INT& iStart, INT& iEnd) {
-    if (iStart == -1 && iEnd == -1)
+    if (iStart == -1 && iEnd == -1) // 選択なし
         return;
-    if (iStart == 0 && iEnd == -1) {
+    if (iStart == 0 && iEnd == -1) { // すべて選択
         iStart = 0;
         iEnd = (INT)m_parts.size();
         return;
     }
+    // それ以外の選択
     INT start = min(iStart, iEnd);
     INT end = max(iStart, iEnd);
     iStart = start;
