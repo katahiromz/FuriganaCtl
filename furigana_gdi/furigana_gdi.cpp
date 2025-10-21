@@ -155,6 +155,11 @@ void TextRun::update_height(TextDoc& doc) {
         m_ruby_height = 0;
         m_run_height = m_base_height;
     }
+
+    if (m_run_height == 0) {
+        // Runが改行文字（\n）のみで構成されている場合でも、最低限の行の高さを確保
+        m_run_height = m_base_height;
+    }
 }
 
 /**
