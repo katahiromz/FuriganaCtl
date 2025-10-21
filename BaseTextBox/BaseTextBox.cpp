@@ -63,7 +63,7 @@ void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
 
     LOGFONTW lf;
     GetObjectW(hfont, sizeof(lf), &lf);
-    lf.lfQuality = ANTIALIASED_QUALITY;
+    lf.lfQuality = PROOF_QUALITY;
 
     m_font = ::CreateFontIndirectW(&lf);
     m_own_font = true;
