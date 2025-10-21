@@ -20,7 +20,7 @@ static inline void DPRINTF(LPCWSTR fmt, ...) {
     va_start(va, fmt);
     INT len = wvsprintfW(text, fmt, va);
     assert(len < _countof(text));
-    OutputDebugStringW(text);
+    ::OutputDebugStringW(text);
     va_end(va);
 #endif
 }
@@ -35,16 +35,16 @@ static inline void DPRINTF(LPCWSTR fmt, ...) {
 static INT get_text_width(HDC dc, LPCWSTR text, size_t len) {
     if (len <= 0) return 0;
     SIZE size = {0};
-    GetTextExtentPoint32W(dc, text, (INT)len, &size);
+    ::GetTextExtentPoint32W(dc, text, (INT)len, &size);
     return size.cx;
 }
 
 static const COLORREF *get_default_colors() {
     static COLORREF s_colors[4];
-    s_colors[0] = GetSysColor(COLOR_WINDOWTEXT);
-    s_colors[1] = GetSysColor(COLOR_WINDOW);
-    s_colors[2] = GetSysColor(COLOR_HIGHLIGHTTEXT);
-    s_colors[3] = GetSysColor(COLOR_HIGHLIGHT);
+    s_colors[0] = ::GetSysColor(COLOR_WINDOWTEXT);
+    s_colors[1] = ::GetSysColor(COLOR_WINDOW);
+    s_colors[2] = ::GetSysColor(COLOR_HIGHLIGHTTEXT);
+    s_colors[3] = ::GetSysColor(COLOR_HIGHLIGHT);
     return s_colors;
 }
 
@@ -120,7 +120,7 @@ mstr_split(std::vector<std::wstring>& container,
 void TextPart::update_width(TextDoc& doc) {
     // 幅の計測
     HDC dc = doc.m_dc;
-    HGDIOBJ hFontOld = SelectObject(dc, doc.m_hBaseFont);
+    HGDIOBJ hFontOld = ::SelectObject(dc, doc.m_hBaseFont);
     std::wstring& text = doc.m_text;
     switch (m_type) {
     case TextPart::NORMAL:
@@ -130,7 +130,7 @@ void TextPart::update_width(TextDoc& doc) {
         break;
     case TextPart::RUBY:
         m_base_width = get_text_width(dc, &text[m_base_index], m_base_len);
-        SelectObject(dc, doc.m_hRubyFont);
+        ::SelectObject(dc, doc.m_hRubyFont);
         m_ruby_width = get_text_width(dc, &text[m_ruby_index], m_ruby_len);
         // ルビブロックの幅は、ベースとルビの幅の大きい方
         m_part_width = max(m_base_width, m_ruby_width);
@@ -141,7 +141,7 @@ void TextPart::update_width(TextDoc& doc) {
         m_part_width = 0;
         break;
     }
-    SelectObject(dc, hFontOld);
+    ::SelectObject(dc, hFontOld);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -208,9 +208,9 @@ void TextDoc::set_fonts(HFONT hBaseFont, HFONT hRubyFont) {
     m_hRubyFont = hRubyFont;
 
     // しきい値を取得する（計測と描画の両方で必要）
-    HGDIOBJ hFontOldForGap = SelectObject(m_dc, m_hBaseFont);
+    HGDIOBJ hFontOldForGap = ::SelectObject(m_dc, m_hBaseFont);
     m_gap_threshold = get_text_width(m_dc, L"漢i", 2);
-    SelectObject(m_dc, hFontOldForGap);
+    ::SelectObject(m_dc, hFontOldForGap);
 
     set_dirty();
 }
@@ -483,14 +483,14 @@ void TextDoc::set_text(const std::wstring& text, UINT flags) {
  * パーツの高さを計算する。
  */
 void TextDoc::_update_parts_height() {
-    HGDIOBJ hFontOld = SelectObject(m_dc, m_hBaseFont);
+    HGDIOBJ hFontOld = ::SelectObject(m_dc, m_hBaseFont);
     TEXTMETRICW tm;
-    GetTextMetricsW(m_dc, &tm);
+    ::GetTextMetricsW(m_dc, &tm);
     m_base_height = tm.tmHeight; // ベーステキストのフォントの高さ
     SelectObject(m_dc, m_hRubyFont);
-    GetTextMetricsW(m_dc, &tm);
+    ::GetTextMetricsW(m_dc, &tm);
     m_ruby_height = tm.tmHeight; // ルビテキストのフォントの高さ
-    SelectObject(m_dc, hFontOld);
+    ::SelectObject(m_dc, hFontOld);
 }
 
 /**
@@ -661,7 +661,6 @@ INT TextDoc::update_runs(UINT flags) {
             bool kinsoku_applied = false;
 
 #ifndef NO_KINSOKU // 禁則処理をするか？
-
             // 直前パート末尾文字 / 現パート先頭文字を取得
             wchar_t prevCh = 0, nextCh = 0;
             if (iPart > 0) {
@@ -786,8 +785,8 @@ void TextDoc::_draw_run(
     HBRUSH hBrushBg = NULL;
     HBRUSH hBrushSel = NULL;
     if (dc) {
-        hBrushBg = CreateSolidBrush(colors[1]);
-        hBrushSel = CreateSolidBrush(colors[3]);
+        hBrushBg = ::CreateSolidBrush(colors[1]);
+        hBrushSel = ::CreateSolidBrush(colors[3]);
         SetBkMode(dc, TRANSPARENT);
     }
 
@@ -817,11 +816,11 @@ void TextDoc::_draw_run(
         if (dc) {
             // 背景の塗りつぶし（選択状態ごとにブラシを使い分け） — ブラシは再利用
             if (iStart <= iPart && iPart < iEnd) {
-                SetTextColor(dc, colors[2]);
-                FillRect(dc, &rc, hBrushSel);
+                ::SetTextColor(dc, colors[2]);
+                ::FillRect(dc, &rc, hBrushSel);
             } else {
-                SetTextColor(dc, colors[0]);
-                FillRect(dc, &rc, hBrushBg);
+                ::SetTextColor(dc, colors[0]);
+                ::FillRect(dc, &rc, hBrushBg);
             }
 
             switch (part.m_type) {
@@ -833,7 +832,7 @@ void TextDoc::_draw_run(
                         break;
                     size_t base_index = part.m_base_index;
                     if (base_index + base_len - 1 < m_text.length()) {
-                        if (m_text[base_index + base_len - 1] == '\r')
+                        if (m_text[base_index + base_len - 1] == L'\r')
                             --base_len;
                     }
 
@@ -891,8 +890,8 @@ void TextDoc::_draw_run(
     }
 
     // クリーンアップ
-    if (hBrushBg) DeleteObject(hBrushBg);
-    if (hBrushSel) DeleteObject(hBrushSel);
+    if (hBrushBg) ::DeleteObject(hBrushBg);
+    if (hBrushSel) ::DeleteObject(hBrushSel);
     // m_dc はコンストラクタで作っているのでここで削除しない
 }
 
