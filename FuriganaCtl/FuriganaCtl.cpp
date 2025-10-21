@@ -622,7 +622,7 @@ INT FuriganaCtl_impl::hit_test(INT x, INT y) {
     INT draw_y = y - m_margin_rect.top;
     INT doc_x = draw_x + m_scroll_x;
     INT doc_y = draw_y + m_scroll_y;
-    INT iPart = m_doc.hit_test(doc_x, doc_y);
+    INT iPart = m_doc.hit_test(doc_x, doc_y, get_draw_flags());
 #ifndef NDEBUG // デバッグ時のみ
     std::wstring text;
     if (iPart < (INT)m_doc.m_parts.size()) {
@@ -932,6 +932,12 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     }
 }
 
+// WM_STYLECHANGED
+void FuriganaCtl_impl::OnStyleChanged(HWND hwnd) {
+    m_doc.set_dirty();
+    invalidate();
+}
+
 // WM_PAINT
 void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     PAINTSTRUCT ps;
@@ -1060,6 +1066,9 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_KEYDOWN, pImpl->OnKey);
         HANDLE_MSG(hwnd, WM_HSCROLL, pImpl->OnHScroll);
         HANDLE_MSG(hwnd, WM_VSCROLL, pImpl->OnVScroll);
+    case WM_STYLECHANGED:
+        pImpl->OnStyleChanged(hwnd);
+        break;
     case FC_SETRUBYRATIO:
         return pImpl->OnSetRubyRatio((INT)wParam, (INT)lParam);
     case FC_SETMARGIN:

@@ -346,7 +346,7 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
     m_max_width = ((flags & DT_SINGLELINE) && !(flags & (DT_RIGHT | DT_CENTER))) ? MAXLONG : layout_width;
 
     if (m_layout_dirty) {
-        update_runs();
+        update_runs(flags);
         m_layout_dirty = false;
     }
 
@@ -499,9 +499,9 @@ void TextDoc::_update_parts_width() {
  * @param y Y座標。
  * @return パートのインデックス。
  */
-INT TextDoc::hit_test(INT x, INT y) {
+INT TextDoc::hit_test(INT x, INT y, UINT flags) {
     if (m_layout_dirty) {
-        update_runs();
+        update_runs(flags);
         m_layout_dirty = false;
     }
 
@@ -594,7 +594,7 @@ std::wstring TextDoc::get_selection_text() {
  * 0個以上のランを更新する。
  * @return 入植したランの個数。
  */
-INT TextDoc::update_runs() {
+INT TextDoc::update_runs(UINT flags) {
     m_runs.clear();
 
     // パーツの寸法を計算する
@@ -608,8 +608,8 @@ INT TextDoc::update_runs() {
         TextPart& part = m_parts[iPart];
         INT part_width = part.m_part_width;
 
-        // 改行文字は必ず区切り
-        if (part.m_type == TextPart::NEWLINE) {
+        // 改行文字
+        if (part.m_type == TextPart::NEWLINE && (flags & ES_MULTILINE)) {
             TextRun run;
             run.m_part_index_start = (INT)iPart0;
             run.m_part_index_end = (INT)iPart + 1;
@@ -889,7 +889,7 @@ void TextDoc::draw_doc(
     m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : (prc->right - prc->left);
 
     if (m_layout_dirty) {
-        update_runs();
+        update_runs(flags);
         m_layout_dirty = false;
     }
 

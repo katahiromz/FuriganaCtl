@@ -66,6 +66,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos);
     virtual void OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos);
     virtual void OnPaint(HWND hwnd);
+    virtual void OnStyleChanged(HWND hwnd);
 
     virtual LRESULT OnSetRubyRatio(INT mul, INT div);
     virtual LRESULT OnSetMargin(LPRECT prc);
