@@ -199,6 +199,8 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
 void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!hfont)
         return;
+    if (!m_doc.m_ruby_ratio_div)
+        return;
 
     LOGFONT lf;
     ::GetObject(hfont, sizeof(lf), &lf);
