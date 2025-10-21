@@ -622,7 +622,15 @@ INT FuriganaCtl_impl::hit_test(INT x, INT y) {
     INT draw_y = y - m_margin_rect.top;
     INT doc_x = draw_x + m_scroll_x;
     INT doc_y = draw_y + m_scroll_y;
-    return m_doc.hit_test(doc_x, doc_y);
+    INT iPart = m_doc.hit_test(doc_x, doc_y);
+#ifndef NDEBUG // デバッグ時のみ
+    std::wstring text;
+    if (iPart < (INT)m_doc.m_parts.size()) {
+        text = m_doc.m_parts[iPart].m_text;
+    }
+    DPRINTF(L"hit_test: %d, \"%ls\"\n", iPart, text.c_str());
+#endif
+    return iPart;
 }
 
 // ensure_visible: 指定されたパートがクライアント領域内に入るようにスクロール位置を調整します。
