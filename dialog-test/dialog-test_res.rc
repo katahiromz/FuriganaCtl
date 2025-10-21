@@ -16,8 +16,6 @@
 
 #pragma code_page(65001) // UTF-8
 
-//////////////////////////////////////////////////////////////////////////////
-
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 //////////////////////////////////////////////////////////////////////////////
@@ -26,25 +24,9 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 1 24 "res/Manifest_1.manifest"
 
 //////////////////////////////////////////////////////////////////////////////
+// Languages
 
-LANGUAGE LANG_ENGLISH, SUBLANG_DEFAULT
-
-//////////////////////////////////////////////////////////////////////////////
-// RT_DIALOG
-
-1 DIALOGEX 0, 0, 300, 167
-CAPTION "FuriganaCtl dialog-test"
-STYLE DS_CENTER | DS_MODALFRAME | WS_POPUPWINDOW | WS_CAPTION
-FONT 12, "ピザPゴシック", 400, 0, 128
-{
-    EDITTEXT edt1, 0, 5, 295, 70, ES_WANTRETURN | ES_MULTILINE | WS_VSCROLL, WS_EX_CLIENTEDGE
-    CONTROL "", edt2, "FURIGANACTL", ES_WANTRETURN | ES_MULTILINE | WS_VSCROLL | WS_TABSTOP, 0, 75, 295, 65, WS_EX_CLIENTEDGE
-    AUTORADIOBUTTON "Left", rad1, 5, 145, 30, 15, WS_TABSTOP
-    AUTORADIOBUTTON "Center", rad2, 40, 145, 35, 15, WS_TABSTOP
-    AUTORADIOBUTTON "Right", rad3, 80, 145, 35, 15, WS_TABSTOP
-    DEFPUSHBUTTON "OK", IDOK, 170, 150, 60, 15
-    PUSHBUTTON "Cancel", IDCANCEL, 235, 150, 60, 15
-}
+#include "lang/en_US.rc"
 
 //////////////////////////////////////////////////////////////////////////////
 // TEXTINCLUDE

@@ -6,6 +6,17 @@
 
 HFONT g_hFont = NULL;
 
+void SetMulti(HWND hwnd, BOOL multi)
+{
+    HWND hwndEdt2 = GetDlgItem(hwnd, edt2);
+
+    DWORD style = (DWORD)GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
+    style &= ~ES_MULTILINE;
+    style |= (multi ? ES_MULTILINE : 0);
+
+    SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
+}
+
 void SetAlign(HWND hwnd, DWORD align)
 {
     HWND hwndEdt2 = GetDlgItem(hwnd, edt2);
@@ -36,6 +47,9 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     DWORD style = (DWORD)GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
     if (multi) style |= ES_MULTILINE;
     SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
+
+    if (multi)
+        CheckDlgButton(hwnd, chx1, BST_CHECKED);
 
     CheckRadioButton(hwnd, rad1, rad3, rad1);
 
@@ -76,6 +90,9 @@ void OnCommand(HWND hwnd, INT id, HWND hwndCtl, UINT codeNotify)
         break;
     case rad3:
         SetAlign(hwnd, ES_RIGHT);
+        break;
+    case chx1:
+        SetMulti(hwnd, IsDlgButtonChecked(hwnd, chx1) == BST_CHECKED);
         break;
     case edt1:
         {
