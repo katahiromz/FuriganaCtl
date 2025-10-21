@@ -609,7 +609,7 @@ INT TextDoc::update_runs() {
         INT part_width = part.m_part_width;
 
         // 改行文字は必ず区切り
-        if (part.m_text == L"\n") {
+        if (part.m_type == TextPart::NEWLINE) {
             TextRun run;
             run.m_part_index_start = (INT)iPart0;
             run.m_part_index_end = (INT)iPart + 1;
