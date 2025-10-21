@@ -551,18 +551,20 @@ INT TextDoc::hit_test(INT x, INT y) {
 }
 
 /**
- * 選択領域を表すインデックス区間を普通にする。
- * 関数は、iStart <= iEndを満たすように整数値を変更する。
- * @param iStart 開始のパートインデックス。
- * @param iEnd 終了のパートインデックス。
+ * 選択領域を表すインデックス区間を普通にする。関数は、引数値を変更する。
+ * @param iStart 開始のパートインデックスまたは-1。
+ * @param iEnd 終了のパートインデックスまたは-1。
  */
 void TextDoc::get_normalized_selection(INT& iStart, INT& iEnd) {
-    if (iStart == -1 || iEnd == -1) {
-        iStart = iEnd = -1;
+    if (iStart == -1 && iEnd == -1)
+        return;
+    if (iStart == 0 && iEnd == -1) {
+        iStart = 0;
+        iEnd = (INT)m_parts.size();
         return;
     }
-    INT start = min(m_selection_start, m_selection_end);
-    INT end = max(m_selection_start, m_selection_end);
+    INT start = min(iStart, iEnd);
+    INT end = max(iStart, iEnd);
     iStart = start;
     iEnd = end;
 }
@@ -575,12 +577,12 @@ std::wstring TextDoc::get_selection_text() {
     INT start = m_selection_start;
     INT end = m_selection_end;
     get_normalized_selection(start, end);
-    if (start == -1 || start == end) return L"";
+    if (start == -1 || end == -1) return L"";
 
     std::wstring text;
     for (INT iPart = start; iPart < end; ++iPart) {
         TextPart& part = m_parts[iPart];
-        text += part.m_text;
+        text += m_text.substr(part.m_base_index, part.m_base_len);
     }
 
     return text;

@@ -118,7 +118,7 @@ struct TextDoc {
         m_base_height = 0;
         m_ruby_height = 0;
         m_selection_start = -1;
-        m_selection_end = 0;
+        m_selection_end = -1;
         m_para_width = 0;
         m_max_width = 0;
         m_line_gap = 2;
