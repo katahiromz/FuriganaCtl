@@ -61,14 +61,24 @@ HWND hwndFurigana = CreateWindowW(
 SetWindowTextW(hwndFurigana, L"志(こころざし)を持(も)って漢字(かんじ)の振(ふ)り仮名(がな)に携(たずさ)わる。");
 ```
 
+## 対応スタイル一覧
+
+| 定数              | 説明              |
+| ----------------- | ----------------- |
+| `ES_LEFT`         | 左そろえ          |
+| `ES_CENTER`       | 水平中央そろえ    |
+| `ES_RIGHT`        | 右そろえ          |
+| `ES_MULTILINE`    | 複数行対応        |
+| `ES_AUTOHSCROLL`  | 横スクロール対応  |
+
 ## カスタムメッセージ一覧
 
 | 定数              | WPARAM               | LPARAM                          | 説明                                                        |
 | ----------------- | -------------------- | ------------------------------- | ----------------------------------------------------------- |
 | `FC_SETRUBYRATIO` | 分子                 | 分母                            | ルビ倍率設定 (0 < 分子 / 分母 ≦ 1)                         |
-| `FC_SETMARGIN`    | 0                    | LPRECT                          | 余白設定（NULLでデフォルトに戻す）                          |
+| `FC_SETMARGIN`    | 0                    | RECT *                          | 余白設定（NULLでデフォルトに戻す）                          |
 | `FC_SETCOLOR`     | 色インデックス(0-3)  | `COLORREF` または `CLR_INVALID` | 色の設定／リセット                                          |
-| `FC_GETIDEALSIZE` | 0=枠付き, 1=内容のみ | LPRECT                          | 理想的な描画サイズを取得                                    |
+| `FC_GETIDEALSIZE` | 0=枠付き, 1=内容のみ | RECT *                          | 理想的な描画サイズを取得                                    |
 | `FC_SETLINEGAP`   | 行間(px)             | 0                               | 行間設定                                                    |
 
 ## 色インデックス
