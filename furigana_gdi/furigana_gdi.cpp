@@ -827,9 +827,19 @@ void TextDoc::_draw_run(
             switch (part.m_type) {
             case TextPart::NORMAL:
                 {
-                    HGDIOBJ hOld = SelectObject(dc, m_hBaseFont);
-                    ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[part.m_base_index], (INT)part.m_base_len, NULL);
-                    SelectObject(dc, hOld);
+                    // 長さゼロ以下は無視。また、パートの最後の'\r'は無視する。
+                    INT base_len = (INT)part.m_base_len;
+                    if (base_len <= 0)
+                        break;
+                    size_t base_index = part.m_base_index;
+                    if (base_index + base_len - 1 < m_text.length()) {
+                        if (m_text[base_index + base_len - 1] == '\r')
+                            --base_len;
+                    }
+
+                    HGDIOBJ hOld = ::SelectObject(dc, m_hBaseFont);
+                    ::ExtTextOutW(dc, current_x, base_y, 0, NULL, &m_text[base_index], base_len, NULL);
+                    ::SelectObject(dc, hOld);
                 }
                 break;
             case TextPart::RUBY:
@@ -854,16 +864,16 @@ void TextDoc::_draw_run(
                     }
 
                     // ベーステキストの描画
-                    HGDIOBJ hOldBase = SelectObject(dc, m_hBaseFont);
-                    ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], (INT)part.m_base_len, NULL);
-                    SelectObject(dc, hOldBase);
+                    HGDIOBJ hOldBase = ::SelectObject(dc, m_hBaseFont);
+                    ::ExtTextOutW(dc, base_start_x, base_y, 0, NULL, &m_text[part.m_base_index], (INT)part.m_base_len, NULL);
+                    ::SelectObject(dc, hOldBase);
 
                     // ルビテキストの描画
-                    HGDIOBJ hOldRuby = SelectObject(dc, m_hRubyFont);
-                    INT old_extra_ruby = SetTextCharacterExtra(dc, ruby_extra);
-                    ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], (INT)part.m_ruby_len, NULL);
-                    SetTextCharacterExtra(dc, old_extra_ruby);
-                    SelectObject(dc, hOldRuby);
+                    HGDIOBJ hOldRuby = ::SelectObject(dc, m_hRubyFont);
+                    INT old_extra_ruby = ::SetTextCharacterExtra(dc, ruby_extra);
+                    ::ExtTextOutW(dc, ruby_start_x, prc->top, 0, NULL, &m_text[part.m_ruby_index], (INT)part.m_ruby_len, NULL);
+                    ::SetTextCharacterExtra(dc, old_extra_ruby);
+                    ::SelectObject(dc, hOldRuby);
                 }
                 break;
             case TextPart::NEWLINE:
