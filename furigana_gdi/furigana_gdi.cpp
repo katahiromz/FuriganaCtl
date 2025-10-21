@@ -439,7 +439,7 @@ void TextDoc::clear() {
  * テキストを追加する。
  * @param text テキスト文字列。
  */
-void TextDoc::add_text(const std::wstring& text) {
+void TextDoc::add_text(const std::wstring& text, UINT flags) {
     // 改行文字で分割
     std::vector<std::wstring> lines;
     mstr_split(lines, text, std::wstring(L"\n"));
@@ -609,7 +609,7 @@ INT TextDoc::update_runs(UINT flags) {
         INT part_width = part.m_part_width;
 
         // 改行文字
-        if (part.m_type == TextPart::NEWLINE && (flags & ES_MULTILINE)) {
+        if (part.m_type == TextPart::NEWLINE) {
             TextRun run;
             run.m_part_index_start = (INT)iPart0;
             run.m_part_index_end = (INT)iPart + 1;
