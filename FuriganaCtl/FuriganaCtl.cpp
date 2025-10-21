@@ -204,33 +204,32 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!m_doc.m_ruby_ratio_div)
         return;
 
-    BaseTextBox_impl::OnSetFont(hwndCtl, hfont, FALSE);
-
     LOGFONT lf;
     ::GetObject(hfont, sizeof(lf), &lf);
-    lf.lfHeight *= m_doc.m_ruby_ratio_mul;
-    lf.lfHeight /= m_doc.m_ruby_ratio_div;
-
-    // フォント品質を明示的に設定
-    lf.lfQuality = ANTIALIASED_QUALITY;
 
     if (m_own_sub_font && m_sub_font)
         ::DeleteObject(m_sub_font);
+    if (m_own_font && m_font)
+        ::DeleteObject(m_font);
 
+    // フォント品質を明示的に設定
+    lf.lfQuality = PROOF_QUALITY;
+
+    // ベースフォント作成（ベースフォント用）
+    m_font = ::CreateFontIndirect(&lf);
+    m_own_font = true;
+
+    // サブフォント作成（ルビテキスト用）
+    lf.lfHeight *= m_doc.m_ruby_ratio_mul;
+    lf.lfHeight /= m_doc.m_ruby_ratio_div;
     m_sub_font = ::CreateFontIndirect(&lf);
-    if (m_sub_font) {
-        m_doc.set_fonts(m_font, m_sub_font); // 弱い参照
-        m_own_sub_font = true;
-    } else {
-        OutputDebugStringA("CreateFontIndirect failed!\n");
-        m_own_sub_font = false;
-        // フォールバック：ベースフォントを使用
-        m_doc.set_fonts(m_font, m_font); // 弱い参照
-    }
+    m_own_sub_font = true;
 
-    if (fRedraw) {
+    // フォントをセット
+    m_doc.set_fonts(m_font, m_sub_font);
+
+    if (fRedraw)
         invalidate();
-    }
 }
 
 // WM_STYLECHANGED
@@ -1083,6 +1082,7 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_KEYDOWN, pImpl->OnKey);
         HANDLE_MSG(hwnd, WM_HSCROLL, pImpl->OnHScroll);
         HANDLE_MSG(hwnd, WM_VSCROLL, pImpl->OnVScroll);
+        HANDLE_MSG(hwnd, WM_SETFONT, pImpl->OnSetFont);
     case WM_STYLECHANGED:
         pImpl->OnStyleChanged(hwnd);
         break;
