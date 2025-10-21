@@ -68,6 +68,7 @@ struct TextRun {
         m_ruby_height = 0;
         m_run_width = 0;
         m_run_height = 0;
+        m_max_width = 0;
         m_delta_x = 0;
         m_has_ruby = false;
     }
