@@ -11,6 +11,13 @@
 #include <cassert>
 #include "resource.h"
 
+// FIXME: 醜いコード
+#undef min
+#undef max
+#include <algorithm>
+#define min std::min
+#define max std::max
+
 // デバッグ出力
 static inline void DPRINTF(LPCWSTR fmt, ...) {
 #ifndef NDEBUG
@@ -62,8 +69,8 @@ void FuriganaCtl_impl::update_scroll_info() {
     RECT rcIdeal = rc;
     m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
 
-    INT pageW = max(0, rc.right - rc.left);
-    INT docW  = max(0, rcIdeal.right - rcIdeal.left);
+    INT pageW = max(0, INT(rc.right - rc.left));
+    INT docW  = max(0, INT(rcIdeal.right - rcIdeal.left));
     INT maxHorz = max(0, docW);
 
     SCROLLINFO si = { sizeof(si) };
@@ -74,8 +81,8 @@ void FuriganaCtl_impl::update_scroll_info() {
     ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
     m_scroll_x = ::GetScrollPos(m_hwnd, SB_HORZ);
 
-    INT pageH = max(0, rc.bottom - rc.top);
-    INT docH  = max(0, rcIdeal.bottom - rcIdeal.top);
+    INT pageH = max(0, INT(rc.bottom - rc.top));
+    INT docH  = max(0, INT(rcIdeal.bottom - rcIdeal.top));
     INT maxVert = max(0, docH);
 
     si.fMask = SIF_PAGE | SIF_RANGE;
@@ -266,7 +273,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             rc.top += m_margin_rect.top;
             rc.right -= m_margin_rect.right;
             rc.bottom -= m_margin_rect.bottom;
-            INT layout_width = (drawFlags & DT_SINGLELINE) ? MAXLONG : max(0, rc.right - rc.left);
+            INT layout_width = (drawFlags & DT_SINGLELINE) ? MAXLONG : max(0, INT(rc.right - rc.left));
 
             // Get caret position
             POINT caretPt = {0, 0};
@@ -279,7 +286,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             INT runIndex = (INT)m_doc.m_runs.size();
             for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
                 const TextRun& run = m_doc.m_runs[ri];
-                if (caret >= run.m_part_index_start && caret < run.m_part_index_end) {
+                if (run.m_part_index_start <= caret && caret < run.m_part_index_end) {
                     runIndex = (INT)ri;
                     break;
                 }
@@ -356,7 +363,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             rc.top += m_margin_rect.top;
             rc.right -= m_margin_rect.right;
             rc.bottom -= m_margin_rect.bottom;
-            INT layout_width = (drawFlags & DT_SINGLELINE) ? MAXLONG : max(0, rc.right - rc.left);
+            INT layout_width = (drawFlags & DT_SINGLELINE) ? MAXLONG : max(0, INT(rc.right - rc.left));
 
             POINT caretPt = {0, 0};
             if (!m_doc.get_part_position(caret, layout_width, &caretPt, drawFlags)) {
@@ -367,7 +374,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             INT runIndex = (INT)m_doc.m_runs.size();
             for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
                 const TextRun& run = m_doc.m_runs[ri];
-                if (caret >= run.m_part_index_start && caret < run.m_part_index_end) {
+                if (run.m_part_index_start <= caret && caret < run.m_part_index_end) {
                     runIndex = (INT)ri;
                     break;
                 }
@@ -620,8 +627,10 @@ INT FuriganaCtl_impl::hit_test(INT x, INT y) {
 // ensure_visible: 指定されたパートがクライアント領域内に入るようにスクロール位置を調整します。
 // iPart: パートインデックス（m_doc.m_parts のインデックス）
 void FuriganaCtl_impl::ensure_visible(INT iPart) {
-    if (iPart < 0) iPart = 0;
-    if (iPart >= (INT)m_doc.m_parts.size()) iPart = (INT)m_doc.m_parts.size();
+    if (iPart < 0)
+        iPart = 0;
+    if (iPart >= (INT)m_doc.m_parts.size())
+        iPart = (INT)m_doc.m_parts.size();
 
     // クライアントの描画領域（マージンを除く）
     RECT rcClient;
@@ -632,10 +641,11 @@ void FuriganaCtl_impl::ensure_visible(INT iPart) {
     rc.right -= m_margin_rect.right;
     rc.bottom -= m_margin_rect.bottom;
 
-    UINT flags = get_draw_flags();
+    UINT flags = get_draw_flags(); // 描画フラグ
 
-    // layout_width: 折り返し幅（単一行モードなら無視される）
-    INT layout_width = (flags & DT_SINGLELINE) ? MAXLONG : max(0, rc.right - rc.left);
+    // 折り返し幅（単一行モードなら無視される）
+    INT layout_width = (flags & DT_SINGLELINE) ? MAXLONG : max(0, INT(rc.right - rc.left));
+
     POINT pt = {0, 0};
     if (!m_doc.get_part_position(iPart, layout_width, &pt, flags))
         return;
@@ -655,8 +665,8 @@ void FuriganaCtl_impl::ensure_visible(INT iPart) {
     }
 
     // 現在のページサイズ
-    INT pageW = max(0, rc.right - rc.left);
-    INT pageH = max(0, rc.bottom - rc.top);
+    INT pageW = max(0, INT(rc.right - rc.left));
+    INT pageH = max(0, INT(rc.bottom - rc.top));
 
     // 更新前にスクロール情報を最新化して範囲を得る
     update_scroll_info();
@@ -794,7 +804,7 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
     SCROLLINFO si = { sizeof(si) };
 
     // 水平スクロール設定（単一行のとき等）
-    si.nMax = max(0, rc.top);
+    si.nMax = max(0, INT(rc.top));
     si.nPage = max(0, cxInner);
     si.nPos = m_scroll_x;
     if (si.nPos > si.nMax) si.nPos = si.nMax;
@@ -803,7 +813,7 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
 
     // 垂直スクロール設定
     si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
-    si.nMax = max(0, rc.bottom);
+    si.nMax = max(0, INT(rc.bottom));
     si.nPage = max(0, cyInner);
     si.nPos = m_scroll_y;
     if (si.nPos > si.nMax) si.nPos = si.nMax;

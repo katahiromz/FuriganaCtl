@@ -5,6 +5,13 @@
 #include "char_judge.h"
 #include <assert.h>
 
+// FIXME: 醜いコード
+#undef min
+#undef max
+#include <algorithm>
+#define min std::min
+#define max std::max
+
 /**
  * テキストの幅を計測する。
  * @param dc デバイスコンテキスト。
@@ -348,7 +355,9 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
             current_y += m_line_gap;
 
         // run の vertical span: [current_y, current_y + run.m_run_height)
-        if (iPart >= run.m_part_index_start && iPart < run.m_part_index_end) {
+        if ((run.m_part_index_start <= iPart && iPart < run.m_part_index_end) ||
+             (run.m_part_index_start == run.m_part_index_end && run.m_part_index_start == iPart)
+        {
             // 水平方向の位置を計算
             INT current_x = 0;
             for (INT pi = run.m_part_index_start; pi < iPart; ++pi) {
