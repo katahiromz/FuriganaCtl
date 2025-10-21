@@ -531,9 +531,11 @@ void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, INT x, INT y,
     SetFocus(hwnd);
 }
 
+// FC_SETSEL
 LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
     m_doc.m_selection_start = iStartSel;
     m_doc.m_selection_end = iEndSel;
+    m_doc.set_dirty();
     invalidate();
     return TRUE;
 }
@@ -1101,6 +1103,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         return pImpl->OnSetLineGap((INT)wParam);
     case FC_GETIDEALSIZE:
         return pImpl->OnGetIdealSize((INT)wParam, (RECT *)lParam);
+    case FC_SETSEL:
+        return pImpl->OnSetSel((INT)wParam, (INT)lParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }

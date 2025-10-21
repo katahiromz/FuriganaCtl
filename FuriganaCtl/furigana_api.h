@@ -10,3 +10,5 @@
 #define FC_SETLINEGAP (WM_USER + 1003)
 // FC_GETIDEALSIZE - Get ideal size
 #define FC_GETIDEALSIZE (WM_USER + 1004)
+// FC_SETSEL - Set selection
+#define FC_SETSEL (WM_USER + 1005)
