@@ -449,7 +449,7 @@ void TextDoc::clear() {
  * テキストを追加する。
  * @param text テキスト文字列。
  */
-void TextDoc::add_text(const std::wstring& text, UINT flags) {
+void TextDoc::set_text(const std::wstring& text, UINT flags) {
     // 改行文字で分割
     std::vector<std::wstring> lines;
     mstr_split(lines, text, std::wstring(L"\n"));

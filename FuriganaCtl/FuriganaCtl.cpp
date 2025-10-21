@@ -100,7 +100,7 @@ void FuriganaCtl_impl::update_scroll_info() {
 void FuriganaCtl_impl::invalidate() {
     if (m_doc.m_text != m_text) {
         m_doc.clear();
-        m_doc.add_text(m_text, get_draw_flags());
+        m_doc.set_text(m_text, get_draw_flags());
         DPRINTF(L"[invalidate] parts count: %d\n", (INT)m_doc.m_parts.size());
     }
 

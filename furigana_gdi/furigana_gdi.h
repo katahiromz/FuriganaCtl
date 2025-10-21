@@ -131,7 +131,7 @@ struct TextDoc {
         DeleteDC(m_dc);
     }
 
-    void add_text(const std::wstring& text, UINT flags);
+    void set_text(const std::wstring& text, UINT flags);
     void clear();
     void set_selection(INT iStart, INT iEnd);
     std::wstring get_selection_text();
