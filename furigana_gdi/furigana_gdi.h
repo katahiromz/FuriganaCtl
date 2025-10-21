@@ -39,11 +39,8 @@ struct TextPart {
     INT m_ruby_width;
     INT m_part_width;
 
-    bool m_selected;
-
     TextPart() {
         m_part_width = -1;
-        m_selected = false;
     }
     bool has_ruby() const { return m_ruby_len > 0; }
     void update_width(TextDoc& doc);
