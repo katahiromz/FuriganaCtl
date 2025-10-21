@@ -18,9 +18,9 @@ FONT 12, "ピザPゴシック", 400, 0, 128
     AUTORADIOBUTTON "Left", rad1, 5, 145, 30, 15, WS_TABSTOP
     AUTORADIOBUTTON "Center", rad2, 40, 145, 35, 15, WS_TABSTOP
     AUTORADIOBUTTON "Right", rad3, 80, 145, 35, 15, WS_TABSTOP
+    AUTOCHECKBOX "Multi", chx1, 122, 146, 41, 14
     DEFPUSHBUTTON "OK", IDOK, 170, 150, 60, 15
     PUSHBUTTON "Cancel", IDCANCEL, 235, 150, 60, 15
-    AUTOCHECKBOX "Multi", chx1, 122, 146, 41, 14
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -264,6 +264,10 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
     case VK_NEXT: // PageDown
         ::PostMessageW(hwnd, WM_VSCROLL, MAKELPARAM(SB_PAGEDOWN, 0), 0);
         break;
+    case VK_TAB: // Tab key
+        if ((m_self->get_style() & ES_MULTILINE) && m_hwndParent)
+            SendMessageW(m_hwndParent, WM_NEXTDLGCTL, fShift, 0);
+        break;
     case VK_UP: // ↑
         {
             // Move caret/selection to the nearest part on the previous visual line.
