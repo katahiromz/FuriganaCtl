@@ -12,6 +12,19 @@
 #define min std::min
 #define max std::max
 
+// デバッグ出力
+static inline void DPRINTF(LPCWSTR fmt, ...) {
+#ifndef NDEBUG
+    WCHAR text[1024];
+    va_list va;
+    va_start(va, fmt);
+    INT len = wvsprintfW(text, fmt, va);
+    assert(len < _countof(text));
+    OutputDebugStringW(text);
+    va_end(va);
+#endif
+}
+
 /**
  * テキストの幅を計測する。
  * @param dc デバイスコンテキスト。
@@ -660,6 +673,7 @@ INT TextDoc::update_runs(UINT flags) {
                         // iPart をデクリメントして（for の ++で元の iPart を再処理）
                         iPart = lastIdx - 1;
                         handled = true;
+                        continue;
                     }
                 }
             }
@@ -684,6 +698,7 @@ INT TextDoc::update_runs(UINT flags) {
                         current_x = run_width = lastWidth;
                         iPart = lastIdx - 1;
                         handled = true;
+                        continue;
                     }
                 }
             }
@@ -704,7 +719,7 @@ INT TextDoc::update_runs(UINT flags) {
             }
         }
 
-        // 通常は現在のパートを現在のランへ追加
+        // 通常の処理
         current_x += part_width;
         run_width += part_width;
     }
@@ -923,7 +938,9 @@ void TextDoc::get_ideal_size(LPRECT prc, UINT flags)
 
 void TextDoc::ensure_layout(UINT flags) {
     if (m_layout_dirty) {
+        DPRINTF(L"[ensure_layout] updating runs with flags: 0x%X\n", flags);
         update_runs(flags);
         m_layout_dirty = false;
+        DPRINTF(L"[ensure_layout] runs count: %d\n", (INT)m_runs.size());
     }
 }

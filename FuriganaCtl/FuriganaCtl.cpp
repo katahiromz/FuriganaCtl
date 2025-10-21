@@ -100,6 +100,7 @@ void FuriganaCtl_impl::invalidate() {
     if (m_doc.m_text != m_text) {
         m_doc.clear();
         m_doc.add_text(m_text, get_draw_flags());
+        DPRINTF(L"[invalidate] parts count: %d\n", (INT)m_doc.m_parts.size());
     }
 
     update_scroll_info();
@@ -202,16 +203,18 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!m_doc.m_ruby_ratio_div)
         return;
 
+    BaseTextBox_impl::OnSetFont(hwndCtl, hfont, FALSE);
+
     LOGFONT lf;
     ::GetObject(hfont, sizeof(lf), &lf);
     lf.lfHeight *= m_doc.m_ruby_ratio_mul;
     lf.lfHeight /= m_doc.m_ruby_ratio_div;
+
+    // フォント品質を明示的に設定
     lf.lfQuality = ANTIALIASED_QUALITY;
 
     if (m_own_sub_font && m_sub_font)
         ::DeleteObject(m_sub_font);
-
-    BaseTextBox_impl::OnSetFont(hwndCtl, hfont, FALSE);
 
     m_sub_font = ::CreateFontIndirect(&lf);
     if (m_sub_font) {
@@ -222,6 +225,10 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
         m_own_sub_font = false;
         // フォールバック：ベースフォントを使用
         m_doc.set_fonts(m_font, m_font); // 弱い参照
+    }
+
+    if (fRedraw) {
+        invalidate();
     }
 }
 
