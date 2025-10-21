@@ -598,7 +598,7 @@ std::wstring TextDoc::get_selection_text() {
 }
 
 /**
- * 0個以上のランを更新する。
+ * 1個以上のランを更新する。
  * @return 作成されたランの個数。
  */
 INT TextDoc::update_runs(UINT flags) {
@@ -731,15 +731,13 @@ INT TextDoc::update_runs(UINT flags) {
     }
 
     // 折り返しの残りのパーツのランを追加
-    if (iPart0 < m_parts.size()) {
-        TextRun run;
-        run.m_part_index_start = (INT)iPart0;
-        run.m_part_index_end = (INT)m_parts.size();
-        run.m_run_width = current_x;
-        run.m_max_width = m_max_width;
-        m_runs.push_back(run);
-    }
-    
+    TextRun run;
+    run.m_part_index_start = (INT)iPart0;
+    run.m_part_index_end = (INT)m_parts.size();
+    run.m_run_width = current_x;
+    run.m_max_width = m_max_width;
+    m_runs.push_back(run);
+
     // 各ランの高さを計算する
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
         TextRun& run = m_runs[iRun];
