@@ -193,6 +193,7 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
     if (line_gap < 0)
         return FALSE;
     m_doc.m_line_gap = line_gap;
+    m_doc.set_dirty();
     invalidate();
     return TRUE;
 }
@@ -833,6 +834,7 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
     SCROLLINFO si = { sizeof(si) };
 
     // 水平スクロール設定（単一行のとき等）
+    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
     si.nMax = max(0, INT(rc.top));
     si.nPage = max(0, cxInner);
     si.nPos = m_scroll_x;
@@ -850,6 +852,7 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
     m_scroll_y = si.nPos;
 
     m_doc.set_dirty();
+    invalidate();
 }
 
 // WM_HSCROLL
