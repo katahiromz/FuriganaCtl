@@ -92,6 +92,7 @@ void FuriganaCtl_impl::update_scroll_info() {
     ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
     m_scroll_y = ::GetScrollPos(m_hwnd, SB_VERT);
 
+    m_doc.set_dirty();
     BaseTextBox_impl::invalidate();
 }
 
@@ -892,7 +893,8 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
         m_scroll_x = nPos;
         si.fMask = SIF_POS;
         si.nPos = nPos;
-        ::SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+        ::SetScrollInfo(hwnd, SB_HORZ, &si, FALSE);
+        m_doc.set_dirty();
         invalidate();
     }
 }
@@ -943,7 +945,8 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
         m_scroll_y = nPos;
         si.fMask = SIF_POS;
         si.nPos = nPos;
-        ::SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+        ::SetScrollInfo(hwnd, SB_VERT, &si, FALSE);
+        m_doc.set_dirty();
         invalidate();
     }
 }
