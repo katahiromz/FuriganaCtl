@@ -532,8 +532,15 @@ INT TextDoc::hit_test(INT x, INT y) {
         INT current_x = 0;
         for (; iPart < run.m_part_index_end; ++iPart) {
             const TextPart& part = m_parts[iPart];
+
+            // 改行文字の場合は、このランの終端として扱う
+            if (part.m_type == TextPart::NEWLINE)
+                return iPart;
+
+            // パートの中央より左か？
             if (x < current_x + part.m_part_width / 2)
                 return (INT)iPart;
+
             current_x += part.m_part_width;
         }
 
@@ -601,7 +608,7 @@ INT TextDoc::update_runs() {
         if (part.m_text == L"\n") {
             TextRun run;
             run.m_part_index_start = (INT)iPart0;
-            run.m_part_index_end = (INT)iPart;
+            run.m_part_index_end = (INT)iPart + 1;
             run.m_run_width = run_width;
             run.m_max_width = m_max_width;
             m_runs.push_back(run);
