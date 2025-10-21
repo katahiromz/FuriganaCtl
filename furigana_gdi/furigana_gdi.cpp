@@ -156,8 +156,7 @@ void TextRun::update_height(TextDoc& doc) {
         m_run_height = m_base_height;
     }
 
-    if (m_run_height == 0) {
-        // Runが改行文字（\n）のみで構成されている場合でも、最低限の行の高さを確保
+    if (m_run_height < m_base_height) {
         m_run_height = m_base_height;
     }
 }
@@ -224,8 +223,9 @@ void TextDoc::_add_para(const std::wstring& text) {
             }
 
             // "{ベーステキスト(ルビテキスト)}"
+            intptr_t newline = m_text.find(L"\n", ich);
             intptr_t furigana_end = m_text.find(L")}", ich);
-            if (furigana_end != m_text.npos) {
+            if (furigana_end != m_text.npos && (newline == m_text.npos || newline > furigana_end)) {
                 intptr_t paren_start = m_text.rfind(L'(', furigana_end);
                 if (paren_start != m_text.npos) {
                     TextPart part;
@@ -298,7 +298,13 @@ void TextDoc::_add_para(const std::wstring& text) {
         size_t char_index = ich;
         size_t char_len = skip_one_real_char(m_text, ich);
         TextPart part;
-        part.m_type = TextPart::NORMAL;
+        if (m_text[char_index] == L'\n') {
+            // 改行文字は TextPart::NEWLINE とする
+            part.m_type = TextPart::NEWLINE;
+        } else {
+            // その他は TextPart::NORMAL とする
+            part.m_type = TextPart::NORMAL;
+        }
         part.m_start_index = char_index;
         part.m_end_index = ich;
         part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
