@@ -33,43 +33,37 @@
 
 ### 1. DLLを読み込む
 
-```cpp
-LoadLibraryW(L"FuriganaCtl.dll");
-```
+	LoadLibraryW(L"FuriganaCtl.dll");
 
 クラス`FuriganaCtl`が登録されます。
 
 ### 2. ウィンドウ作成
 
-```cpp
-HWND hwndFurigana = CreateWindowW(
-    L"FuriganaCtl",
-    L"{漢字(かんじ)} は nice weather です。",
-    WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE,
-    10, 10, 300, 200,
-    hwndParent,
-    NULL,
-    hInst,
-    NULL);
-```
+	HWND hwndFurigana = CreateWindowW(
+	    L"FuriganaCtl",
+	    L"{漢字(かんじ)} は nice weather です。",
+	    WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE,
+	    10, 10, 300, 200,
+	    hwndParent,
+	    NULL,
+	    hInst,
+	    NULL);
 
 ダイアログ リソースからでも作成できます。
 
 ### 3. ウィンドウにテキストをセット
 
-```cpp
-SetWindowTextW(hwndFurigana, L"漢字(かんじ)の連続(れんぞく)にフリガナを付(つ)けられます。");
-```
+	SetWindowTextW(hwndFurigana, L"漢字(かんじ)の連続(れんぞく)にフリガナを付(つ)けられます。");
 
 ## 対応スタイル一覧
 
-| 定数              |    値 | 説明              |
-| ----------------- | ----- | ----------------- |
-| `ES_LEFT`         |     0 | 左そろえ          |
-| `ES_CENTER`       |   0x1 | 水平中央そろえ    |
-| `ES_RIGHT`        |   0x2 | 右そろえ          |
-| `ES_MULTILINE`    |   0x4 | 複数行対応        |
-| `ES_AUTOHSCROLL`  |  0x80 | 横スクロール対応  |
+| 定数              |     値 | 説明              |
+| ----------------- | ------ | ----------------- |
+| `ES_LEFT`         |    `0` | 左そろえ          |
+| `ES_CENTER`       |  `0x1` | 水平中央そろえ    |
+| `ES_RIGHT`        |  `0x2` | 右そろえ          |
+| `ES_MULTILINE`    |  `0x4` | 複数行対応        |
+| `ES_AUTOHSCROLL`  | `0x80` | 横スクロール対応  |
 
 ## カスタムメッセージ一覧
 
@@ -98,4 +92,4 @@ SetWindowTextW(hwndFurigana, L"漢字(かんじ)の連続(れんぞく)にフリ
 * Blog: [`https://katahiromz.fc2.page/`](https://katahiromz.fc2.page/)
 
 ---
-Copyright &copy; 2025 katahiromz
+Copyright (c) 2025 katahiromz
