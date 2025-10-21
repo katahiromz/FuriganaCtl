@@ -278,7 +278,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             // Find which run contains the caret
             INT runIndex = (INT)m_doc.m_runs.size();
             for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
-                const TextRun &run = m_doc.m_runs[ri];
+                const TextRun& run = m_doc.m_runs[ri];
                 if (caret >= run.m_part_index_start && caret < run.m_part_index_end) {
                     runIndex = (INT)ri;
                     break;
@@ -291,7 +291,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
                 newIndex = 0;
             } else {
                 // target is previous run
-                const TextRun &prevRun = m_doc.m_runs[runIndex - 1];
+                const TextRun& prevRun = m_doc.m_runs[runIndex - 1];
 
                 // desired x is caretPt.x
                 INT desiredX = caretPt.x;
@@ -366,7 +366,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             // find run containing caret
             INT runIndex = (INT)m_doc.m_runs.size();
             for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
-                const TextRun &run = m_doc.m_runs[ri];
+                const TextRun& run = m_doc.m_runs[ri];
                 if (caret >= run.m_part_index_start && caret < run.m_part_index_end) {
                     runIndex = (INT)ri;
                     break;
@@ -377,7 +377,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
             if (runIndex == -1) {
                 // caret not inside runs (maybe at end) -> go to last part
                 if (!m_doc.m_runs.empty()) {
-                    const TextRun &lastRun = m_doc.m_runs.back();
+                    const TextRun& lastRun = m_doc.m_runs.back();
                     newIndex = lastRun.m_part_index_end - 1;
                     if (newIndex < 0) newIndex = 0;
                 } else {
@@ -387,7 +387,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
                 // already last run -> go to end
                 newIndex = cParts;
             } else {
-                const TextRun &nextRun = m_doc.m_runs[runIndex + 1];
+                const TextRun& nextRun = m_doc.m_runs[runIndex + 1];
                 INT desiredX = caretPt.x;
 
                 INT current_x = nextRun.m_delta_x;
@@ -619,8 +619,7 @@ INT FuriganaCtl_impl::hit_test(INT x, INT y) {
 
 // ensure_visible: 指定されたパートがクライアント領域内に入るようにスクロール位置を調整します。
 // iPart: パートインデックス（m_doc.m_parts のインデックス）
-void FuriganaCtl_impl::ensure_visible(INT iPart)
-{
+void FuriganaCtl_impl::ensure_visible(INT iPart) {
     if (iPart < 0) iPart = 0;
     if (iPart >= (INT)m_doc.m_parts.size()) iPart = (INT)m_doc.m_parts.size();
 
@@ -647,8 +646,8 @@ void FuriganaCtl_impl::ensure_visible(INT iPart)
         part_width = m_doc.m_parts[iPart].m_part_width;
         run_height = 0;
         for (size_t ri = 0; ri < m_doc.m_runs.size(); ++ri) {
-            const TextRun &run = m_doc.m_runs[ri];
-            if (iPart >= run.m_part_index_start && iPart < run.m_part_index_end) {
+            const TextRun& run = m_doc.m_runs[ri];
+            if (run.m_part_index_start <= iPart && iPart < run.m_part_index_end) {
                 run_height = run.m_run_height;
                 break;
             }
