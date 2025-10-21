@@ -294,17 +294,26 @@ void TextDoc::_add_para(const std::wstring& text) {
             continue;
         }
 
+        if (m_text[ich] == L'\n') { // 改行文字を検出した場合
+            TextPart part;
+            part.m_type = TextPart::NEWLINE;
+            part.m_start_index = ich;
+            ++ich;
+            part.m_end_index = ich;
+            part.m_text = L"\n";
+            part.m_base_index = part.m_start_index;
+            part.m_base_len = 1;
+            part.m_ruby_index = 0;
+            part.m_ruby_len = 0;
+            m_parts.push_back(part);
+            continue;
+        }
+
         // その他は一文字ずつ
         size_t char_index = ich;
         size_t char_len = skip_one_real_char(m_text, ich);
         TextPart part;
-        if (m_text[char_index] == L'\n') {
-            // 改行文字は TextPart::NEWLINE とする
-            part.m_type = TextPart::NEWLINE;
-        } else {
-            // その他は TextPart::NORMAL とする
-            part.m_type = TextPart::NORMAL;
-        }
+        part.m_type = TextPart::NORMAL;
         part.m_start_index = char_index;
         part.m_end_index = ich;
         part.m_text = m_text.substr(part.m_start_index, part.m_end_index - part.m_start_index);
