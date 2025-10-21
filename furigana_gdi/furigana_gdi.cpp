@@ -658,7 +658,7 @@ INT TextDoc::update_runs(UINT flags) {
             // iBreak は、この行の終端となるパート（exclusive）。
             INT iBreak = iPart; 
             INT break_width = current_x;
-            bool kin_soku_applied = false;
+            bool kinsoku_applied = false;
 
 #ifndef NO_KINSOKU // 禁則処理をするか？
 
@@ -685,19 +685,19 @@ INT TextDoc::update_runs(UINT flags) {
                         // 禁則適用: 1つ前のパート (lastIdx) まで巻き戻し、それを次行の先頭にする
                         iBreak = lastIdx;
                         break_width = current_x - lastWidth; // ラン幅を1パート分減らす
-                        kin_soku_applied = true;
+                        kinsoku_applied = true;
                     }
                 }
 
-                // 2) 直前が行末禁則文字なら -> 同様に末尾1パートを次行へ移す試み (既に kin_soku_applied ならスキップ)
-                if (!kin_soku_applied && is_kinsoku_tail(prevCh)) {
+                // 2) 直前が行末禁則文字なら -> 同様に末尾1パートを次行へ移す試み (既に kinsoku_applied ならスキップ)
+                if (!kinsoku_applied && is_kinsoku_tail(prevCh)) {
                     INT next_line_width = lastWidth + part_width;
 
                     if (next_line_width <= m_max_width) {
                         // 禁則適用: 1つ前のパート (lastIdx) まで巻き戻し、それを次行の先頭にする
                         iBreak = lastIdx;
                         break_width = current_x - lastWidth;
-                        kin_soku_applied = true;
+                        kinsoku_applied = true;
                     }
                 }
             }
