@@ -848,6 +848,8 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
     if (si.nPos > si.nMax) si.nPos = si.nMax;
     SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
     m_scroll_y = si.nPos;
+
+    m_doc.set_dirty();
 }
 
 // WM_HSCROLL
