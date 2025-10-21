@@ -599,7 +599,7 @@ std::wstring TextDoc::get_selection_text() {
 
 /**
  * 0個以上のランを更新する。
- * @return 入植したランの個数。
+ * @return 作成されたランの個数。
  */
 INT TextDoc::update_runs(UINT flags) {
     m_runs.clear();
@@ -608,33 +608,61 @@ INT TextDoc::update_runs(UINT flags) {
     _update_parts_height();
     _update_parts_width();
 
-    // 折り返し処理を行ってランを追加していく。ついでに各ランの幅を計算する
-    size_t iPart, iPart0 = 0, iRun = 0;
-    INT current_x = 0, run_width = 0;
-    for (iPart = 0; iPart < m_parts.size(); ++iPart) {
+    INT iPart0 = 0; // 現在のランの開始パートインデックス
+    INT current_x = 0; // 現在のランの幅
+
+    // パーツを全て処理するまでループ
+    for (INT iPart = 0; iPart < (INT)m_parts.size(); ++iPart) {
         TextPart& part = m_parts[iPart];
         INT part_width = part.m_part_width;
 
-        // 改行文字
+        // 1. 改行文字 (TextPart::NEWLINE)
         if (part.m_type == TextPart::NEWLINE) {
             TextRun run;
             run.m_part_index_start = (INT)iPart0;
-            run.m_part_index_end = (INT)iPart + 1;
-            run.m_run_width = run_width;
+            run.m_part_index_end = iPart + 1; // 改行文字を含めてランを確定
+            run.m_run_width = current_x;
             run.m_max_width = m_max_width;
             m_runs.push_back(run);
 
             // 次パートは改行の次から開始
             iPart0 = iPart + 1;
-            current_x = run_width = 0;
+            current_x = 0;
             continue;
         }
 
-        // 折り返しが必要か？
+        // 2. 折り返しが必要か？ (現在のパートを加えると最大幅を超えるか)
         bool wrap = (m_max_width > 0 && current_x + part_width > m_max_width);
 
-        if (wrap && current_x != 0) {
-            // 直前パート末尾文字 / 現パート先頭文字
+        if (wrap) {
+            // A) 行頭でのオーバーフロー (current_x == 0):
+            //    このパート単独で最大幅を超えている。このパートを単独でランとし、次のパートへ進む
+            if (current_x == 0) {
+                TextRun run;
+                run.m_part_index_start = (INT)iPart0;
+                run.m_part_index_end = iPart + 1; // 超過パートを含めて確定
+                run.m_run_width = part_width;
+                run.m_max_width = m_max_width;
+                m_runs.push_back(run);
+
+                // 次の行の開始を現在のパートの次にする
+                iPart0 = iPart + 1;
+                current_x = 0;
+                continue; // for の ++iPart で次のパートに進む
+            }
+
+            // B) 行の途中での折り返し (current_x != 0):
+            //    現在のパート iPart の手前 (iPart - 1) で改行を試みる
+            
+            // iPart は次行の先頭になるべきパート。
+            // iBreak は、この行の終端となるパート（exclusive）。
+            INT iBreak = iPart; 
+            INT break_width = current_x;
+            bool kin_soku_applied = false;
+
+#ifndef NO_KINSOKU // 禁則処理をするか？
+
+            // 直前パート末尾文字 / 現パート先頭文字を取得
             wchar_t prevCh = 0, nextCh = 0;
             if (iPart > 0) {
                 const std::wstring &prevText = m_parts[iPart - 1].m_text;
@@ -644,94 +672,74 @@ INT TextDoc::update_runs(UINT flags) {
             if (!part.m_text.empty())
                 nextCh = part.m_text[0];
 
-            bool handled = false;
+            // 現行に少なくとも1パートある (iPart - iPart0 >= 1)
+            if (iPart > iPart0) {
+                INT lastIdx = iPart - 1; // 現行ランの末尾パート
+                INT lastWidth = m_parts[lastIdx].m_part_width;
 
-#ifndef NO_KINSOKU // 禁則処理をするか？
-            // (1) 次が行頭禁則文字なら -> 現行の末尾1パートを次行へ移す試み
-            if (is_kinsoku_head(nextCh)) {
-                // 現行に少なくとも2パートある（1つしかないと移動で空行になる）
-                if ((INT)(iPart - iPart0) >= 2) {
-                    INT lastIdx = (INT)iPart - 1;
-                    INT lastWidth = m_parts[lastIdx].m_part_width;
-                    INT new_curr_run_width = run_width - lastWidth; // 現行幅から末尾を除く
-                    INT next_line_width = lastWidth + part_width;   // 次行に入る幅（末尾 + 今のパート）
+                // 1) 次が行頭禁則文字なら -> 現行の末尾1パートを次行へ移す試み
+                if (is_kinsoku_head(nextCh)) {
+                    INT next_line_width = lastWidth + part_width; // 次行に入る幅 (末尾 + 現パート)
 
-                    // 移動後も次行幅が m_max_width を超えないか確認
                     if (next_line_width <= m_max_width) {
-                        // 現行を末尾を除いて確定
-                        TextRun run;
-                        run.m_part_index_start = (INT)iPart0;
-                        run.m_part_index_end = lastIdx; // exclusive
-                        run.m_run_width = new_curr_run_width;
-                        run.m_max_width = m_max_width;
-                        m_runs.push_back(run);
-
-                        // 次行の開始位置を lastIdx にして、current_x/run_width を lastWidth にする
-                        iPart0 = lastIdx;
-                        current_x = run_width = lastWidth;
-
-                        // iPart をデクリメントして（for の ++で元の iPart を再処理）
-                        iPart = lastIdx - 1;
-                        handled = true;
-                        continue;
+                        // 禁則適用: 1つ前のパート (lastIdx) まで巻き戻し、それを次行の先頭にする
+                        iBreak = lastIdx;
+                        break_width = current_x - lastWidth; // ラン幅を1パート分減らす
+                        kin_soku_applied = true;
                     }
                 }
-            }
 
-            // (2) 直前が行末禁則文字なら -> 同様に末尾1パートを次行へ移す試み
-            if (!handled && is_kinsoku_tail(prevCh)) {
-                if ((INT)(iPart - iPart0) >= 2) {
-                    INT lastIdx = (INT)iPart - 1;
-                    INT lastWidth = m_parts[lastIdx].m_part_width;
-                    INT new_curr_run_width = run_width - lastWidth;
+                // 2) 直前が行末禁則文字なら -> 同様に末尾1パートを次行へ移す試み (既に kin_soku_applied ならスキップ)
+                if (!kin_soku_applied && is_kinsoku_tail(prevCh)) {
                     INT next_line_width = lastWidth + part_width;
 
                     if (next_line_width <= m_max_width) {
-                        TextRun run;
-                        run.m_part_index_start = (INT)iPart0;
-                        run.m_part_index_end = lastIdx;
-                        run.m_run_width = new_curr_run_width;
-                        run.m_max_width = m_max_width;
-                        m_runs.push_back(run);
-
-                        iPart0 = lastIdx;
-                        current_x = run_width = lastWidth;
-                        iPart = lastIdx - 1;
-                        handled = true;
-                        continue;
+                        // 禁則適用: 1つ前のパート (lastIdx) まで巻き戻し、それを次行の先頭にする
+                        iBreak = lastIdx;
+                        break_width = current_x - lastWidth;
+                        kin_soku_applied = true;
                     }
                 }
             }
 #endif // ndef NO_KINSOKU
 
-            if (!handled) {
-                // 移動できなければ通常の改行（この場合、次行の先頭が禁則文字になる可能性あり）
-                TextRun run;
-                run.m_part_index_start = (INT)iPart0;
-                run.m_part_index_end = (INT)iPart;
-                run.m_run_width = run_width;
-                run.m_max_width = m_max_width;
-                m_runs.push_back(run);
+            // 行を確定 (iPart0 から iBreak の直前まで)
+            TextRun run;
+            run.m_part_index_start = (INT)iPart0;
+            run.m_part_index_end = iBreak; // exclusive
+            run.m_run_width = break_width;
+            run.m_max_width = m_max_width;
+            m_runs.push_back(run);
 
-                iPart0 = iPart;
-                current_x = run_width = 0;
-                continue;
+            // 次の行の開始位置を iBreak に設定
+            iPart0 = iBreak;
+            
+            // iBreak から iPart-1 までの幅 (持ち越されたパートの幅)
+            INT carry_over_width = 0;
+            for (INT pi = iBreak; pi < iPart; ++pi) {
+                carry_over_width += m_parts[pi].m_part_width;
             }
+            current_x = carry_over_width;
+            
+            // iPart の処理を再開するため、for ループの ++iPart が走る前にインデックスを調整する。
+            iPart = iBreak - 1; 
+            continue; // for の ++iPart で iBreak になり、次回のループで iBreak から処理が再開される
         }
 
-        // 通常の処理
+        // 3. 通常の処理 (幅を最大幅を超えない限り加算)
         current_x += part_width;
-        run_width += part_width;
     }
 
     // 折り返しの残りのパーツのランを追加
-    TextRun run;
-    run.m_part_index_start = (INT)iPart0;
-    run.m_part_index_end = (INT)iPart;
-    run.m_run_width = run_width;
-    run.m_max_width = m_max_width;
-    m_runs.push_back(run);
-
+    if (iPart0 < m_parts.size()) {
+        TextRun run;
+        run.m_part_index_start = (INT)iPart0;
+        run.m_part_index_end = (INT)m_parts.size();
+        run.m_run_width = current_x;
+        run.m_max_width = m_max_width;
+        m_runs.push_back(run);
+    }
+    
     // 各ランの高さを計算する
     for (size_t iRun = 0; iRun < m_runs.size(); ++iRun) {
         TextRun& run = m_runs[iRun];
