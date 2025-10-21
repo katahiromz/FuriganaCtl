@@ -90,11 +90,6 @@ SetWindowTextW(hwndFurigana, L"志(こころざし)を持(も)って漢字(か�
 | 2            | 選択テキスト色 | `COLOR_HIGHLIGHTTEXT` |
 | 3            | 選択背景色     | `COLOR_HIGHLIGHT`     |
 
-## 依存関係
-
-* Windows 2000 以降
-* C++/Win32
-
 ## 作者
 
 **`katahiromz`**
