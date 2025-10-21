@@ -940,12 +940,6 @@ void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
     }
 }
 
-// WM_STYLECHANGED
-void FuriganaCtl_impl::OnStyleChanged(HWND hwnd) {
-    m_doc.set_dirty();
-    invalidate();
-}
-
 // WM_PAINT
 void FuriganaCtl_impl::OnPaint(HWND hwnd) {
     PAINTSTRUCT ps;
