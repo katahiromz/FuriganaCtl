@@ -551,23 +551,24 @@ INT TextDoc::hit_test(INT x, INT y) {
 }
 
 /**
- * 選択領域を表すインデックス区間を普通にする。関数は、引数値を変更する。
+ * 選択領域を表すインデックス区間を正規化する。関数は引数値を変更する。
  * @param iStart 開始のパートインデックスまたは-1。
  * @param iEnd 終了のパートインデックスまたは-1。
  */
 void TextDoc::get_normalized_selection(INT& iStart, INT& iEnd) {
-    if (iStart == -1 && iEnd == -1) // 選択なし
+    if (iStart == -1) // 選択なし
         return;
     if (iStart == 0 && iEnd == -1) { // すべて選択
-        iStart = 0;
         iEnd = (INT)m_parts.size();
         return;
     }
     // それ以外の選択
-    INT start = min(iStart, iEnd);
-    INT end = max(iStart, iEnd);
+    INT start = min(iStart, iEnd), end = max(iStart, iEnd);
     iStart = start;
     iEnd = end;
+    assert(iStart <= iEnd);
+    assert(iStart >= 0);
+    assert(iEnd >= 0);
 }
 
 /**
