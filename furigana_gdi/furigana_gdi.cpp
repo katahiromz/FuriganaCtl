@@ -913,7 +913,7 @@ void TextDoc::draw_doc(
         colors = get_default_colors();
 
     m_max_width = (flags & DT_SINGLELINE) ? MAXLONG : (prc->right - prc->left);
-
+    set_dirty();
     ensure_layout(flags);
 
     INT current_y = prc->top;
