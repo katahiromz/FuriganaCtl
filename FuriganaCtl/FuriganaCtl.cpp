@@ -826,33 +826,10 @@ void FuriganaCtl_impl::OnSysColorChange(HWND hwnd) {
 
 // WM_SIZE
 void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
-    // 理想的なサイズを取得
-    RECT rc = { 0, 0, cx, cy };
-    ::SendMessageW(hwnd, FC_GETIDEALSIZE, 1, (LPARAM)&rc);
+    update_scroll_info();
 
-    // 内部サイズ
-    INT cxInner = cx - (m_margin_rect.left + m_margin_rect.right);
-    INT cyInner = cy - (m_margin_rect.top + m_margin_rect.bottom);
-
-    SCROLLINFO si = { sizeof(si) };
-
-    // 水平スクロール設定（単一行のとき等）
-    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
-    si.nMax = max(0, INT(rc.top));
-    si.nPage = max(0, cxInner);
-    si.nPos = m_scroll_x;
-    if (si.nPos > si.nMax) si.nPos = si.nMax;
-    SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-    m_scroll_x = si.nPos;
-
-    // 垂直スクロール設定
-    si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
-    si.nMax = max(0, INT(rc.bottom));
-    si.nPage = max(0, cyInner);
-    si.nPos = m_scroll_y;
-    if (si.nPos > si.nMax) si.nPos = si.nMax;
-    SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
-    m_scroll_y = si.nPos;
+    m_scroll_x = ::GetScrollPos(hwnd, SB_HORZ);
+    m_scroll_y = ::GetScrollPos(hwnd, SB_VERT);
 
     m_doc.set_dirty();
     invalidate();
@@ -860,31 +837,24 @@ void FuriganaCtl_impl::OnSize(HWND hwnd, UINT state, INT cx, INT cy) {
 
 // WM_HSCROLL
 void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
-    update_scroll_info();
-
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_ALL;
     ::GetScrollInfo(hwnd, SB_HORZ, &si);
 
     INT nPos = si.nPos;
+    INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
     switch (code) {
     case SB_LINELEFT:
         nPos = max(si.nMin, nPos - m_scroll_step_x);
         break;
     case SB_LINERIGHT:
-        {
-            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
-            nPos = min(maxPos, nPos + m_scroll_step_x);
-        }
+        nPos = min(maxPos, nPos + m_scroll_step_x);
         break;
     case SB_PAGELEFT:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
         break;
     case SB_PAGERIGHT:
-        {
-            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
-            nPos = min(maxPos, nPos + (INT)si.nPage);
-        }
+        nPos = min(maxPos, nPos + (INT)si.nPage);
         break;
     case SB_THUMBTRACK:
     case SB_THUMBPOSITION:
@@ -912,31 +882,24 @@ void FuriganaCtl_impl::OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
 
 // WM_VSCROLL
 void FuriganaCtl_impl::OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos) {
-    update_scroll_info();
-
     SCROLLINFO si = { sizeof(si) };
     si.fMask = SIF_ALL;
     ::GetScrollInfo(hwnd, SB_VERT, &si);
 
     INT nPos = si.nPos;
+    INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
     switch (code) {
     case SB_LINEUP:
         nPos = max(si.nMin, nPos - m_scroll_step_y);
         break;
     case SB_LINEDOWN:
-        {
-            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
-            nPos = min(maxPos, nPos + m_scroll_step_y);
-        }
+        nPos = min(maxPos, nPos + m_scroll_step_y);
         break;
     case SB_PAGEUP:
         nPos = max(si.nMin, nPos - (INT)si.nPage);
         break;
     case SB_PAGEDOWN:
-        {
-            INT maxPos = max(0, (INT)si.nMax - (INT)si.nPage);
-            nPos = min(maxPos, nPos + (INT)si.nPage);
-        }
+        nPos = min(maxPos, nPos + (INT)si.nPage);
         break;
     case SB_THUMBTRACK:
     case SB_THUMBPOSITION:
