@@ -135,7 +135,9 @@ LRESULT FuriganaCtl_impl::OnSetRubyRatio(INT mul, INT div) {
         m_doc.m_ruby_ratio_mul = mul; // ルビ比率の分子
         m_doc.m_ruby_ratio_div = div; // ルビ比率の分母
 
-        OnSetFont(m_hwnd, m_font, TRUE);
+        LOGFONTW lf;
+        ::GetObjectW(m_font, sizeof(lf), &lf);
+        set_log_font(lf);
         return TRUE;
     }
     return FALSE;
@@ -211,14 +213,8 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
 }
 
 // WM_SETFONT
-void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
-    if (!hfont)
-        return;
-    if (!m_doc.m_ruby_ratio_div)
-        return;
-
-    LOGFONTW lf;
-    ::GetObjectW(hfont, sizeof(lf), &lf);
+void FuriganaCtl_impl::set_log_font(LOGFONTW& lf) {
+    assert(m_doc.m_ruby_ratio_div);
 
     if (m_own_sub_font && m_sub_font)
         ::DeleteObject(m_sub_font);
@@ -233,16 +229,31 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     m_own_font = true;
 
     // サブフォント作成（ルビテキスト用）
-    lf.lfHeight *= m_doc.m_ruby_ratio_mul;
-    lf.lfHeight /= m_doc.m_ruby_ratio_div;
+    if (m_doc.m_ruby_ratio_div == 0) {
+        lf.lfHeight *= 4;
+        lf.lfHeight /= 5;
+    } else {
+        lf.lfHeight *= m_doc.m_ruby_ratio_mul;
+        lf.lfHeight /= m_doc.m_ruby_ratio_div;
+    }
     m_sub_font = ::CreateFontIndirectW(&lf);
     m_own_sub_font = true;
 
     // フォントをセット
     m_doc.set_fonts(m_font, m_sub_font);
 
-    if (fRedraw)
-        invalidate();
+    invalidate();
+}
+
+// WM_SETFONT
+void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
+    if (!hfont)
+        return;
+
+    LOGFONTW lf;
+    ::GetObjectW(hfont, sizeof(lf), &lf);
+
+    set_log_font(lf);
 }
 
 // WM_STYLECHANGED

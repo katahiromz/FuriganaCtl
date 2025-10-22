@@ -44,6 +44,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     void reset_color(INT iColor);
     void reset_colors();
     UINT get_draw_flags() const;
+    void set_log_font(LOGFONTW& lf);
 
     virtual INT hit_test(INT x, INT y);
     virtual void invalidate();
