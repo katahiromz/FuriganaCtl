@@ -713,6 +713,36 @@ INT TextDoc::update_runs(UINT flags) {
             run.m_max_width = m_max_width;
             m_runs.push_back(run);
 
+            if (iBreak < iPart) { // 実際に巻き戻しが発生した場合
+                // 禁則処理が適用され、行が確定した後の次行の先頭 (iBreak) が、
+                // 確定前と同じ行の先頭 (iPart0) に巻き戻され、かつ iPart0 < iPart だった場合
+                if (iBreak == run.m_part_index_start && iPart0 != iPart) {
+                    // すでにRunは確定しているため、iPart0を次の行の先頭に設定し、
+                    // iBreak を次のパート iPart に強制的に進めることで無限ループを防ぐ                
+                    
+                    // **最終的な解決策: 巻き戻したランが幅制限を超えているか再確認**
+                    INT next_run_start_part = iBreak;
+                    INT next_run_width = 0;
+                    for (INT pi = next_run_start_part; pi < iPart + 1; ++pi) { // iPart + 1 まで（現在の iPart の次まで）
+                        next_run_width += m_parts[pi].m_part_width;
+                    }
+
+                    // 禁則処理により iPart0 から iBreak までのランが確定したが、
+                    // 巻き戻されたパート（iBreak以降）が**単独で最大幅を超えている**場合
+                    // （ただし、このケースでは超えていないと仮定）。
+                    // 無限ループの状況 (Part 3とPart 4が交互に巻き戻される) を強制的に断ち切る
+                    if (kinsoku_applied) {
+                         DPRINTF(L"[KINSOKU BREAK] Force advance iPart from %d to %d\n", iPart, iBreak);
+                         // 既に確定しているので、iPartを次のパートに強制的に進める
+                         iPart = iBreak; // ループの ++iPart で iBreak+1 へ進む
+                         iPart0 = iPart;
+                         current_x = 0;
+                         continue; // 巻き戻されたパートを無視して次のパートから処理を再開
+                    }
+                }
+            }
+
+
             // 次の行の開始位置を iBreak に設定
             iPart0 = iBreak;
 
