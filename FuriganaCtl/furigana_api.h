@@ -1,5 +1,9 @@
 ﻿#pragma once
 
+// Styles
+#define FCS_NOSCROLL 0x4000
+
+// Messages
 // FC_SETRUBYRATIO - Set ruby ratio
 #define FC_SETRUBYRATIO (WM_USER + 1000)
 // FC_SETMARGIN - Set margin

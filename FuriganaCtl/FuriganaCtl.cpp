@@ -59,6 +59,16 @@ void FuriganaCtl_impl::reset_colors() {
 }
 
 void FuriganaCtl_impl::update_scroll_info() {
+    DWORD style = m_self->get_style();
+
+    if (style & FCS_NOSCROLL) {
+        style &= ~(WS_HSCROLL | WS_VSCROLL);
+        SetWindowLongPtrW(m_hwnd, GWL_STYLE, style);
+
+        ::ShowScrollBar(m_hwnd, SB_BOTH, FALSE);
+        return;
+    }
+
     RECT rc;
     ::GetClientRect(m_hwnd, &rc);
     rc.left += m_margin_rect.left;
