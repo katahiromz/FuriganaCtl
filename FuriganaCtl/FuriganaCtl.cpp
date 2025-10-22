@@ -217,8 +217,8 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     if (!m_doc.m_ruby_ratio_div)
         return;
 
-    LOGFONT lf;
-    ::GetObject(hfont, sizeof(lf), &lf);
+    LOGFONTW lf;
+    ::GetObjectW(hfont, sizeof(lf), &lf);
 
     if (m_own_sub_font && m_sub_font)
         ::DeleteObject(m_sub_font);
@@ -229,13 +229,13 @@ void FuriganaCtl_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
     lf.lfQuality = PROOF_QUALITY;
 
     // ベースフォント作成（ベースフォント用）
-    m_font = ::CreateFontIndirect(&lf);
+    m_font = ::CreateFontIndirectW(&lf);
     m_own_font = true;
 
     // サブフォント作成（ルビテキスト用）
     lf.lfHeight *= m_doc.m_ruby_ratio_mul;
     lf.lfHeight /= m_doc.m_ruby_ratio_div;
-    m_sub_font = ::CreateFontIndirect(&lf);
+    m_sub_font = ::CreateFontIndirectW(&lf);
     m_own_sub_font = true;
 
     // フォントをセット
