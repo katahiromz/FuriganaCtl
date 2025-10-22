@@ -57,7 +57,7 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     ZeroMemory(&lf, sizeof(lf));
     lf.lfHeight = -20;
     lf.lfCharSet = SHIFTJIS_CHARSET;
-    lstrcpyn(lf.lfFaceName, TEXT("Piza P Gothic"), _countof(lf.lfFaceName));
+    lstrcpyn(lf.lfFaceName, TEXT("ピザPゴシック"), _countof(lf.lfFaceName));
     g_hFont = ::CreateFontIndirect(&lf);
 
     SendDlgItemMessage(hwnd, edt2, FC_SETRUBYRATIO, 3, 5);
