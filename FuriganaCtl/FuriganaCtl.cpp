@@ -164,24 +164,25 @@ LRESULT FuriganaCtl_impl::OnGetIdealSize(INT type, RECT *prc) {
         return FALSE;
     }
 
-    m_doc.get_ideal_size(prc, get_draw_flags());
-
     switch (type) {
-    case 0:
+    case 0: // 枠あり。ウィンドウ領域
         {
             RECT rc;
             SetRect(&rc, 0, 0, prc->right - prc->left, prc->bottom - prc->top);
 
-            DWORD style = m_self->get_style(), exstyle = m_self->get_exstyle();
-            AdjustWindowRectEx(&rc, style, FALSE, exstyle);
+            m_doc.get_ideal_size(&rc, get_draw_flags());
 
-            prc->right = prc->left + (rc.right - rc.left) + (m_margin_rect.left + m_margin_rect.right) + 2;
-            prc->bottom = prc->top + (rc.bottom - rc.top) + (m_margin_rect.top + m_margin_rect.bottom) + 2;
+            DWORD style = m_self->get_style(), exstyle = m_self->get_exstyle();
+            ::AdjustWindowRectEx(&rc, style, FALSE, exstyle);
+
+            prc->right = prc->left + (rc.right - rc.left) + (m_margin_rect.left + m_margin_rect.right);
+            prc->bottom = prc->top + (rc.bottom - rc.top) + (m_margin_rect.top + m_margin_rect.bottom);
         }
         return TRUE;
-    case 1:
-        prc->right += 2;
-        prc->bottom += 2;
+    case 1: // 枠なし。クライアント領域
+        m_doc.get_ideal_size(prc, get_draw_flags());
+        prc->right += (m_margin_rect.left + m_margin_rect.right);
+        prc->bottom += (m_margin_rect.top + m_margin_rect.bottom);
         return TRUE;
     default:
         DPRINTF(L"unknown type: %d\n", type);
