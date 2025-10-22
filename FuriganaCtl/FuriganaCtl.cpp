@@ -164,7 +164,6 @@ LRESULT FuriganaCtl_impl::OnGetIdealSize(INT type, RECT *prc) {
         return FALSE;
     }
 
-    ::GetClientRect(m_hwnd, prc);
     m_doc.get_ideal_size(prc, get_draw_flags());
 
     switch (type) {
@@ -176,11 +175,13 @@ LRESULT FuriganaCtl_impl::OnGetIdealSize(INT type, RECT *prc) {
             DWORD style = m_self->get_style(), exstyle = m_self->get_exstyle();
             AdjustWindowRectEx(&rc, style, FALSE, exstyle);
 
-            prc->right = prc->left + (rc.right - rc.left) + (m_margin_rect.left + m_margin_rect.right);
-            prc->bottom = prc->top + (rc.bottom - rc.top) + (m_margin_rect.top + m_margin_rect.bottom);
+            prc->right = prc->left + (rc.right - rc.left) + (m_margin_rect.left + m_margin_rect.right) + 2;
+            prc->bottom = prc->top + (rc.bottom - rc.top) + (m_margin_rect.top + m_margin_rect.bottom) + 2;
         }
         return TRUE;
     case 1:
+        prc->right += 2;
+        prc->bottom += 2;
         return TRUE;
     default:
         DPRINTF(L"unknown type: %d\n", type);

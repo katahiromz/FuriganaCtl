@@ -153,11 +153,14 @@ void TextPart::update_width(TextDoc& doc) {
  */
 void TextRun::update_height(TextDoc& doc) {
     // ルビがあるか？
+    m_has_ruby = false;
     for (INT iPart = m_part_index_start; iPart < m_part_index_end; ++iPart) {
         assert(0 <= iPart && iPart < (INT)doc.m_parts.size());
         TextPart& part = doc.m_parts[iPart];
-        if (part.m_type == TextPart::RUBY && part.m_ruby_len > 0)
+        if (part.m_type == TextPart::RUBY && part.m_ruby_len > 0) {
             m_has_ruby = true;
+            break;
+        }
     }
 
     m_base_height = doc.m_base_height;
@@ -653,10 +656,10 @@ INT TextDoc::update_runs(UINT flags) {
 
             // B) 行の途中での折り返し (current_x != 0):
             //    現在のパート iPart の手前 (iPart - 1) で改行を試みる
-            
+
             // iPart は次行の先頭になるべきパート。
             // iBreak は、この行の終端となるパート（exclusive）。
-            INT iBreak = iPart; 
+            INT iBreak = iPart;
             INT break_width = current_x;
             bool kinsoku_applied = false;
 
@@ -712,16 +715,16 @@ INT TextDoc::update_runs(UINT flags) {
 
             // 次の行の開始位置を iBreak に設定
             iPart0 = iBreak;
-            
+
             // iBreak から iPart-1 までの幅 (持ち越されたパートの幅)
             INT carry_over_width = 0;
             for (INT pi = iBreak; pi < iPart; ++pi) {
                 carry_over_width += m_parts[pi].m_part_width;
             }
             current_x = carry_over_width;
-            
+
             // iPart の処理を再開するため、for ループの ++iPart が走る前にインデックスを調整する。
-            iPart = iBreak - 1; 
+            iPart = iBreak - 1;
             continue; // for の ++iPart で iBreak になり、次回のループで iBreak から処理が再開される
         }
 
@@ -945,8 +948,7 @@ void TextDoc::draw_doc(
  * @param prc クライアント領域のRECT構造体へのポインタ。関数はサイズを変更する。
  * @param flags 次のフラグを使用可能: DT_LEFT, DT_CENTER, DT_RIGHT, DT_SINGLELINE。
  */
-void TextDoc::get_ideal_size(LPRECT prc, UINT flags)
-{
+void TextDoc::get_ideal_size(LPRECT prc, UINT flags) {
     assert(prc);
     draw_doc(NULL, prc, flags, NULL);
 }
