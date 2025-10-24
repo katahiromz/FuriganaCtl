@@ -585,16 +585,32 @@ void TextDoc::get_normalized_selection(INT& iStart, INT& iEnd) {
  * 選択テキストを取得する。
  * @return 取得したテキスト文字列。
  */
-std::wstring TextDoc::get_selection_text() {
+std::wstring TextDoc::get_selection_text(INT type) {
     INT start = m_selection_start;
     INT end = m_selection_end;
     get_normalized_selection(start, end);
     if (start == -1 || end == -1) return L"";
 
     std::wstring text;
-    for (INT iPart = start; iPart < end; ++iPart) {
-        TextPart& part = m_parts[iPart];
-        text += m_text.substr(part.m_base_index, part.m_base_len);
+
+    switch (type) {
+    case 0:
+        for (INT iPart = start; iPart < end; ++iPart) {
+            TextPart& part = m_parts[iPart];
+            text += m_text.substr(part.m_base_index, part.m_base_len);
+        }
+        break;
+    case 1:
+        for (INT iPart = start; iPart < end; ++iPart) {
+            TextPart& part = m_parts[iPart];
+            text += m_text.substr(part.m_base_index, part.m_base_len);
+            if (part.m_ruby_len > 0) {
+                text += L"(";
+                text += m_text.substr(part.m_ruby_index, part.m_ruby_len);
+                text += L")";
+            }
+        }
+        break;
     }
 
     return text;

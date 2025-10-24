@@ -288,7 +288,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
     switch (vk) {
     case L'C':
         if (fCtrl) // Ctrl+C
-            OnCopy(hwnd);
+            OnCopy(hwnd, 0);
         break;
     case 'A':
         if (fCtrl) // Ctrl+A
@@ -602,7 +602,10 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
         if (id != 0 && id != -1) {
             switch (id) {
             case ID_COPY: // コピー
-                OnCopy(hwnd);
+                OnCopy(hwnd, 0);
+                break;
+            case ID_COPYWITHFURIGANA: // フリガナ付きでコピー
+                OnCopy(hwnd, 1);
                 break;
             case ID_SELECTALL: // すべて選択
                 select_all();
@@ -636,8 +639,8 @@ void FuriganaCtl_impl::OnMouseWheel(HWND hwnd, INT xPos, INT yPos, INT zDelta, U
 }
 
 // WM_COPY
-void FuriganaCtl_impl::OnCopy(HWND hwnd) {
-    std::wstring text = m_doc.get_selection_text();
+void FuriganaCtl_impl::OnCopy(HWND hwnd, INT type) {
+    std::wstring text = m_doc.get_selection_text(type);
 
     BOOL ok = FALSE;
     if (::OpenClipboard(hwnd)) {
@@ -1081,7 +1084,6 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_LBUTTONUP, pImpl->OnLButtonUp);
         HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pImpl->OnRButtonDown);
         HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pImpl->OnSysColorChange);
-        HANDLE_MSG(hwnd, WM_COPY, pImpl->OnCopy);
         HANDLE_MSG(hwnd, WM_MOUSEWHEEL, pImpl->OnMouseWheel);
         HANDLE_MSG(hwnd, WM_CONTEXTMENU, pImpl->OnContextMenu);
         HANDLE_MSG(hwnd, WM_GETDLGCODE, pImpl->OnGetDlgCode);
@@ -1091,6 +1093,9 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_SETFONT, pImpl->OnSetFont);
         HANDLE_MSG(hwnd, WM_SETFOCUS, pImpl->OnSetFocus);
         HANDLE_MSG(hwnd, WM_KILLFOCUS, pImpl->OnKillFocus);
+    case WM_COPY:
+        pImpl->OnCopy(hwnd, (INT)wParam);
+        break;
     case WM_STYLECHANGED:
         pImpl->OnStyleChanged(hwnd);
         break;

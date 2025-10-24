@@ -61,7 +61,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UINT yPos);
     virtual UINT OnGetDlgCode(HWND hwnd, LPMSG lpmsg);
     virtual void OnSysColorChange(HWND hwnd);
-    virtual void OnCopy(HWND hwnd);
+    virtual void OnCopy(HWND hwnd, INT type);
     virtual void OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT flags);
     virtual void OnMouseWheel(HWND hwnd, INT xPos, INT yPos, INT zDelta, UINT fwKeys);
     virtual void OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos);

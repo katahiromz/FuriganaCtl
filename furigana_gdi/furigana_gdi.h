@@ -136,7 +136,7 @@ struct TextDoc {
     void set_text(const std::wstring& text, UINT flags);
     void clear();
     void set_selection(INT iStart, INT iEnd);
-    std::wstring get_selection_text();
+    std::wstring get_selection_text(INT type);
     void set_dirty();
     void set_fonts(HFONT hBaseFont, HFONT hRubyFont);
     void get_normalized_selection(INT& iStart, INT& iEnd);
