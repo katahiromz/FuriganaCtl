@@ -14,7 +14,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_DEFAULT
     {
         MENUITEM "Copy", ID_COPY
         MENUITEM SEPARATOR
-        MENUITEM "Copy with furigana", ID_COPYWITHFURIGANA
+        MENUITEM "Copy (with furigana)", ID_COPYWITHFURIGANA
         MENUITEM SEPARATOR
         MENUITEM "Select All", ID_SELECTALL
     }
