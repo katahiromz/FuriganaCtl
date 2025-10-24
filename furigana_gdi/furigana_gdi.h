@@ -112,6 +112,7 @@ struct TextDoc {
     HFONT m_hRubyFont;
     INT m_gap_threshold;
     bool m_layout_dirty;
+    bool m_set_focus;
 
     TextDoc() {
         m_dc = CreateCompatibleDC(NULL);
@@ -126,6 +127,7 @@ struct TextDoc {
         m_hRubyFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
         m_gap_threshold = 0;
         m_layout_dirty = true;
+        m_set_focus = false;
     }
     ~TextDoc() {
         DeleteDC(m_dc);

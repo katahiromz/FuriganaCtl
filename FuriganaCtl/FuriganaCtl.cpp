@@ -212,6 +212,18 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
     return TRUE;
 }
 
+// WM_SETFOCUS
+void FuriganaCtl_impl::OnSetFocus(HWND hwnd, HWND hwndOldFocus) {
+    m_doc.m_set_focus = true;
+    invalidate();
+}
+
+// WM_KILLFOCUS
+void FuriganaCtl_impl::OnKillFocus(HWND hwnd, HWND hwndNewFocus) {
+    m_doc.m_set_focus = false;
+    invalidate();
+}
+
 // WM_SETFONT
 void FuriganaCtl_impl::set_log_font(LOGFONTW& lf) {
     assert(m_doc.m_ruby_ratio_div);
@@ -1076,6 +1088,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_HSCROLL, pImpl->OnHScroll);
         HANDLE_MSG(hwnd, WM_VSCROLL, pImpl->OnVScroll);
         HANDLE_MSG(hwnd, WM_SETFONT, pImpl->OnSetFont);
+        HANDLE_MSG(hwnd, WM_SETFOCUS, pImpl->OnSetFocus);
+        HANDLE_MSG(hwnd, WM_KILLFOCUS, pImpl->OnKillFocus);
     case WM_STYLECHANGED:
         pImpl->OnStyleChanged(hwnd);
         break;

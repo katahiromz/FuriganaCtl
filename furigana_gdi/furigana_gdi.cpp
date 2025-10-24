@@ -836,6 +836,10 @@ void TextDoc::_draw_run(
 
     // 選択領域を種痘。
     INT iStart = m_selection_start, iEnd = m_selection_end;
+    if (!m_set_focus) {
+        iStart = -1;
+        iEnd = 0;
+    }
     get_normalized_selection(iStart, iEnd);
 
     // パーツを順に処理し、計測または描画する

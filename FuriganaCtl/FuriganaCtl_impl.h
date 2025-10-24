@@ -68,6 +68,8 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, INT pos);
     virtual void OnPaint(HWND hwnd);
     virtual void OnStyleChanged(HWND hwnd);
+    virtual void OnSetFocus(HWND hwnd, HWND hwndOldFocus);
+    virtual void OnKillFocus(HWND hwnd, HWND hwndNewFocus);
 
     virtual LRESULT OnSetRubyRatio(INT mul, INT div);
     virtual LRESULT OnSetMargin(LPRECT prc);
