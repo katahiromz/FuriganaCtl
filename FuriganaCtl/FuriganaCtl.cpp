@@ -215,6 +215,7 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
 // WM_SETFOCUS
 void FuriganaCtl_impl::OnSetFocus(HWND hwnd, HWND hwndOldFocus) {
     m_doc.m_set_focus = true;
+    m_doc.set_selection(0, -1);
     invalidate();
 }
 
