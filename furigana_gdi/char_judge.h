@@ -28,7 +28,7 @@ inline bool is_char_alpha_numeric(wchar_t ch) {
     return is_char_alpha(ch) || is_char_digit(ch);
 }
 inline bool is_char_kanji(wchar_t ch) {
-    return ((0x3400 <= ch && ch <= 0x9FFF) || (0xF900 <= ch && ch <= 0xFAFF) || ch == 0x3007);
+    return ((0x3400 <= ch && ch <= 0x9FFF) || (0xF900 <= ch && ch <= 0xFAFF) || ch == 0x3005 || ch == 0x3007);
 }
 
 #define is_surrogate_pair(high, low) IS_SURROGATE_PAIR((high), (low))
