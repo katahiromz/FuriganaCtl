@@ -52,7 +52,8 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void paint_inner(HWND hwnd, HDC dc, RECT *rect);
     virtual void ensure_visible(INT iPart);
     virtual LRESULT notify_parent(HWND hwnd, INT code, NMHDR *hdr);
-    virtual void do_action(UINT id);
+    virtual HMENU load_context_menu();
+    virtual void do_context_action(UINT id);
 
     virtual void OnSize(HWND hwnd, UINT state, INT cx, INT cy);
     virtual void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);

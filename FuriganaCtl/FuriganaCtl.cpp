@@ -579,8 +579,7 @@ LRESULT FuriganaCtl_impl::OnGetSelText(INT cchTextMax, LPWSTR pszText) {
 
 // FC_SETSEL
 LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
-    m_doc.m_selection_start = iStartSel;
-    m_doc.m_selection_end = iEndSel;
+    m_doc.set_selection(iStartSel, iEndSel);
     m_doc.set_dirty();
     invalidate();
     return TRUE;
@@ -607,7 +606,13 @@ void FuriganaCtl_impl::OnRButtonUp(HWND hwnd, int x, int y, UINT flags) {
 }
 
 // コンテキストメニューのアクションを行う
-void FuriganaCtl_impl::do_action(UINT id) {
+void FuriganaCtl_impl::do_context_action(UINT id) {
+    FURIGANA_NOTIFY notify;
+    ZeroMemory(&notify, sizeof(notify));
+    notify.action_id = id;
+    if (notify_parent(m_hwnd, FCN_CONTEXTMENUACTION, &notify))
+        return;
+
     switch (id) {
     case ID_COPY: // コピー
         OnCopy(m_hwnd, 0);
@@ -616,11 +621,37 @@ void FuriganaCtl_impl::do_action(UINT id) {
         OnCopy(m_hwnd, 1);
         break;
     case ID_SELECTALL: // すべて選択
+        ::SetFocus(m_hwnd);
         select_all();
         break;
     default:
         break;
     }
+}
+
+// コンテキストメニューを読み込む
+HMENU FuriganaCtl_impl::load_context_menu() {
+    // 親のFCN_LOADCONTEXTMENU通知メッセージからコンテキストメニューを用意できるか？
+    FURIGANA_NOTIFY notify;
+    ZeroMemory(&notify, sizeof(notify));
+    HMENU hMenu = (HMENU)notify_parent(m_hwnd, FCN_LOADCONTEXTMENU, &notify);
+    if (hMenu)
+        return hMenu;
+
+    // リソースから読み込む
+    hMenu = ::LoadMenu(s_hinst ? s_hinst : GetModuleHandle(NULL), MAKEINTRESOURCE(1));
+    if (!hMenu)
+        return NULL;
+
+    // メニュー状態を更新
+    if (m_doc.m_selection_start == -1 || m_doc.m_selection_start == m_doc.m_selection_end) {
+        ::EnableMenuItem(hMenu, ID_COPY, MF_GRAYED); // 選択領域がなければコピーを無効化
+        ::EnableMenuItem(hMenu, ID_COPYWITHFURIGANA, MF_GRAYED); // 選択領域がなければコピーを無効化
+    }
+    if (m_doc.m_text.empty()) // テキストがなければ
+        ::EnableMenuItem(hMenu, ID_SELECTALL, MF_GRAYED); // 「すべて選択」を無効に
+
+    return hMenu;
 }
 
 // WM_CONTEXTMENU
@@ -633,22 +664,10 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
         yPos = rc.top;
     }
 
-    // メニューを構築する
-    FURIGANA_NOTIFY notify;
-    ZeroMemory(&notify, sizeof(notify));
-    HMENU hMenu = (HMENU)notify_parent(hwnd, FCN_LOADCONTEXTMENU, &notify);
-    if (!hMenu)
-        hMenu = ::LoadMenu(s_hinst ? s_hinst : GetModuleHandle(NULL), MAKEINTRESOURCE(1));
-
-    // サブメニューを取得する
+    // コンテキストメニューを構築する
+    HMENU hMenu = load_context_menu();
     HMENU hSubMenu = ::GetSubMenu(hMenu, 0);
     if (hSubMenu) {
-        if (m_doc.m_selection_start == -1 || m_doc.m_selection_start == m_doc.m_selection_end)
-            ::EnableMenuItem(hSubMenu, ID_COPY, MF_GRAYED); // 選択領域がなければコピーを無効化
-
-        if (m_doc.m_text.empty()) // テキストがなければ
-            ::EnableMenuItem(hSubMenu, ID_SELECTALL, MF_GRAYED); // 「すべて選択」を無効に
-
         // TrackPopupMenuの不具合の回避策
         SetForegroundWindow(hwnd);
 
@@ -656,15 +675,11 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
         INT id = TrackPopupMenu(hSubMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
         if (id) {
             // アクションをする
-            ZeroMemory(&notify, sizeof(notify));
-            notify.action_id = id;
-            if (!notify_parent(hwnd, FCN_CONTEXTMENUACTION, &notify)) {
-                do_action(id);
-            }
+            do_context_action(id);
         }
 
         // TrackPopupMenuの不具合の回避策
-        PostMessageW(hwnd, WM_NULL, 0, 0);
+        ::PostMessageW(hwnd, WM_NULL, 0, 0);
     }
 
     // メニューを破棄
