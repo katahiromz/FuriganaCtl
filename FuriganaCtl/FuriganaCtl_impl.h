@@ -51,6 +51,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void update_scroll_info();
     virtual void paint_inner(HWND hwnd, HDC dc, RECT *rect);
     virtual void ensure_visible(INT iPart);
+    virtual INT notify_parent(HWND hwnd, INT code);
 
     virtual void OnSize(HWND hwnd, UINT state, INT cx, INT cy);
     virtual void OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw);
@@ -70,6 +71,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void OnStyleChanged(HWND hwnd);
     virtual void OnSetFocus(HWND hwnd, HWND hwndOldFocus);
     virtual void OnKillFocus(HWND hwnd, HWND hwndNewFocus);
+    virtual void OnRButtonUp(HWND hwnd, int x, int y, UINT flags);
 
     virtual LRESULT OnSetRubyRatio(INT mul, INT div);
     virtual LRESULT OnSetMargin(LPRECT prc);

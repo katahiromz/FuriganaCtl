@@ -7,6 +7,7 @@
 #include "furigana_api.h"
 #include "../furigana_gdi/furigana_gdi.h"
 #include <windowsx.h>
+#include <commctrl.h>
 #include <new>
 #include <cassert>
 #include "resource.h"
@@ -585,6 +586,24 @@ LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
     return TRUE;
 }
 
+INT FuriganaCtl_impl::notify_parent(HWND hwnd, INT code) {
+    NMHDR hdr;
+    ZeroMemory(&hdr, sizeof(hdr));
+    hdr.idFrom = ::GetDlgCtrlID(hwnd);
+    hdr.hwndFrom = hwnd;
+    hdr.code = code;
+    return (INT)SendMessageW(m_hwndParent, WM_NOTIFY, hdr.idFrom, (LPARAM)&hdr);
+}
+
+// WM_RBUTTONUP
+void FuriganaCtl_impl::OnRButtonUp(HWND hwnd, int x, int y, UINT flags) {
+    if (!notify_parent(hwnd, NM_RCLICK)) {
+        POINT pt = { x, y };
+        ::ClientToScreen(hwnd, &pt);
+        ::PostMessageW(hwnd, WM_CONTEXTMENU, (WPARAM)hwnd, MAKELPARAM(pt.x, pt.y));
+    }
+}
+
 // WM_CONTEXTMENU
 void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UINT yPos) {
     if (xPos == 0xFFFF && yPos == 0xFFFF) {
@@ -1091,7 +1110,7 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         HANDLE_MSG(hwnd, WM_LBUTTONDOWN, pImpl->OnLButtonDown);
         HANDLE_MSG(hwnd, WM_MOUSEMOVE, pImpl->OnMouseMove);
         HANDLE_MSG(hwnd, WM_LBUTTONUP, pImpl->OnLButtonUp);
-        HANDLE_MSG(hwnd, WM_RBUTTONDOWN, pImpl->OnRButtonDown);
+        HANDLE_MSG(hwnd, WM_RBUTTONUP, pImpl->OnRButtonUp);
         HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, pImpl->OnSysColorChange);
         HANDLE_MSG(hwnd, WM_MOUSEWHEEL, pImpl->OnMouseWheel);
         HANDLE_MSG(hwnd, WM_CONTEXTMENU, pImpl->OnContextMenu);
