@@ -82,6 +82,7 @@ SetWindowTextW(hwndFurigana, L"漢字(かんじ)の連続(れんぞく)にフリ
 | `FC_GETIDEALSIZE` | 0=枠付き, 1=内容のみ | `RECT *`                        | 理想的な描画サイズを取得             |
 | `FC_SETLINEGAP`   | 行間(px)             | 0                               | 行間設定                             |
 | `FC_SETSEL`       | 開始インデックス     | 終了インデックス                | パートインデックスで指定する         |
+| `FC_GETSELTEXT`   | バッファの文字数     | バッファへのポインタ (`WCHAR *`)| 選択テキストを取得する               |
 
 ## 色インデックス
 

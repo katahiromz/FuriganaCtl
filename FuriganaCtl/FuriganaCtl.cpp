@@ -567,6 +567,15 @@ void FuriganaCtl_impl::OnRButtonDown(HWND hwnd, BOOL fDoubleClick, INT x, INT y,
     SetFocus(hwnd);
 }
 
+// FC_GETSELTEXT
+LRESULT FuriganaCtl_impl::OnGetSelText(INT cchTextMax, LPWSTR pszText) {
+    if (!pszText)
+        return 0;
+    std::wstring text = m_doc.get_selection_text(0);
+    lstrcpynW(pszText, text.c_str(), cchTextMax);
+    return lstrlenW(pszText) + 1;
+}
+
 // FC_SETSEL
 LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
     m_doc.m_selection_start = iStartSel;
@@ -1111,6 +1120,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         return pImpl->OnGetIdealSize((INT)wParam, (RECT *)lParam);
     case FC_SETSEL:
         return pImpl->OnSetSel((INT)wParam, (INT)lParam);
+    case FC_GETSELTEXT:
+        return pImpl->OnGetSelText((INT)wParam, (LPWSTR)lParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }

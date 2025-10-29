@@ -76,5 +76,6 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual LRESULT OnSetColor(INT iColor, COLORREF rgbColor);
     virtual LRESULT OnSetLineGap(INT line_gap);
     virtual LRESULT OnSetSel(INT iStartSel, INT iEndSel);
+    virtual LRESULT OnGetSelText(INT cchTextMax, LPWSTR pszText);
     virtual LRESULT OnGetIdealSize(INT type, RECT *prc);
 };
