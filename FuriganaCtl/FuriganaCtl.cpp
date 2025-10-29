@@ -586,34 +586,61 @@ LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
     return TRUE;
 }
 
-INT FuriganaCtl_impl::notify_parent(HWND hwnd, INT code) {
-    NMHDR hdr;
-    ZeroMemory(&hdr, sizeof(hdr));
-    hdr.idFrom = ::GetDlgCtrlID(hwnd);
-    hdr.hwndFrom = hwnd;
-    hdr.code = code;
-    return (INT)SendMessageW(m_hwndParent, WM_NOTIFY, hdr.idFrom, (LPARAM)&hdr);
+struct FURIGANA_NOTIFY : NMHDR {
+    UINT action_id;
+};
+
+LRESULT FuriganaCtl_impl::notify_parent(HWND hwnd, INT code, NMHDR *hdr) {
+    hdr->idFrom = ::GetDlgCtrlID(hwnd);
+    hdr->hwndFrom = hwnd;
+    hdr->code = code;
+    return ::SendMessageW(m_hwndParent, WM_NOTIFY, hdr->idFrom, (LPARAM)hdr);
 }
 
 // WM_RBUTTONUP
 void FuriganaCtl_impl::OnRButtonUp(HWND hwnd, int x, int y, UINT flags) {
-    if (!notify_parent(hwnd, NM_RCLICK)) {
-        POINT pt = { x, y };
-        ::ClientToScreen(hwnd, &pt);
-        ::PostMessageW(hwnd, WM_CONTEXTMENU, (WPARAM)hwnd, MAKELPARAM(pt.x, pt.y));
+    FURIGANA_NOTIFY notify;
+    ZeroMemory(&notify, sizeof(notify));
+    if (!notify_parent(hwnd, NM_RCLICK, &notify)) {
+        ::PostMessageW(hwnd, WM_CONTEXTMENU, (WPARAM)hwnd, ::GetMessagePos());
+    }
+}
+
+// コンテキストメニューのアクションを行う
+void FuriganaCtl_impl::do_action(UINT id) {
+    switch (id) {
+    case ID_COPY: // コピー
+        OnCopy(m_hwnd, 0);
+        break;
+    case ID_COPYWITHFURIGANA: // フリガナ付きでコピー
+        OnCopy(m_hwnd, 1);
+        break;
+    case ID_SELECTALL: // すべて選択
+        select_all();
+        break;
+    default:
+        break;
     }
 }
 
 // WM_CONTEXTMENU
 void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UINT yPos) {
-    if (xPos == 0xFFFF && yPos == 0xFFFF) {
+    if (xPos == 0xFFFF && yPos == 0xFFFF) { // キーボードから？
+        // 位置を修正
         RECT rc;
         GetWindowRect(hwnd, &rc);
         xPos = rc.left;
         yPos = rc.top;
     }
 
-    HMENU hMenu = ::LoadMenu(s_hinst ? s_hinst : GetModuleHandle(NULL), MAKEINTRESOURCE(1));
+    // メニューを構築する
+    FURIGANA_NOTIFY notify;
+    ZeroMemory(&notify, sizeof(notify));
+    HMENU hMenu = (HMENU)notify_parent(hwnd, FCN_LOADCONTEXTMENU, &notify);
+    if (!hMenu)
+        hMenu = ::LoadMenu(s_hinst ? s_hinst : GetModuleHandle(NULL), MAKEINTRESOURCE(1));
+
+    // サブメニューを取得する
     HMENU hSubMenu = ::GetSubMenu(hMenu, 0);
     if (hSubMenu) {
         if (m_doc.m_selection_start == -1 || m_doc.m_selection_start == m_doc.m_selection_end)
@@ -627,26 +654,20 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
 
         UINT uFlags = TPM_RIGHTBUTTON | TPM_RETURNCMD;
         INT id = TrackPopupMenu(hSubMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
-        if (id != 0 && id != -1) {
-            switch (id) {
-            case ID_COPY: // コピー
-                OnCopy(hwnd, 0);
-                break;
-            case ID_COPYWITHFURIGANA: // フリガナ付きでコピー
-                OnCopy(hwnd, 1);
-                break;
-            case ID_SELECTALL: // すべて選択
-                select_all();
-                break;
-            default:
-                assert(0);
-                break;
+        if (id) {
+            // アクションをする
+            ZeroMemory(&notify, sizeof(notify));
+            notify.action_id = id;
+            if (!notify_parent(hwnd, FCN_CONTEXTMENUACTION, &notify)) {
+                do_action(id);
             }
         }
 
         // TrackPopupMenuの不具合の回避策
         PostMessageW(hwnd, WM_NULL, 0, 0);
     }
+
+    // メニューを破棄
     ::DestroyMenu(hMenu);
 }
 
