@@ -9,4 +9,4 @@
     - 禁則処理の無限ループなど修正。
     - FCS_NOSCROLLスタイルを導入。
 - 2026-10-30 Ver.1.3
-    - FC_GETSELTEXTメッセージを導入。
+    - FC_GETSELTEXT、FC_GETSELメッセージを導入。

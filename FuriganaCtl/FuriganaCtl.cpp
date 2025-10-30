@@ -4,8 +4,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include "FuriganaCtl.h"
-#include "furigana_api.h"
-#include "../furigana_gdi/furigana_gdi.h"
 #include <windowsx.h>
 #include <commctrl.h>
 #include <new>
@@ -577,32 +575,43 @@ LRESULT FuriganaCtl_impl::OnGetSelText(INT cchTextMax, LPWSTR pszText) {
     return lstrlenW(pszText) + 1;
 }
 
+// FC_GETSEL
+LRESULT FuriganaCtl_impl::OnGetSel(INT *piStart, INT *piEnd) {
+    if (!piStart || !piEnd)
+        return 0;
+    *piStart = m_doc.m_selection_start;
+    *piEnd = m_doc.m_selection_end;
+    m_doc.get_normalized_selection(*piStart, *piEnd);
+    return TRUE;
+}
+
 // FC_SETSEL
 LRESULT FuriganaCtl_impl::OnSetSel(INT iStartSel, INT iEndSel) {
+    ::SetFocus(m_hwnd);
     m_doc.set_selection(iStartSel, iEndSel);
     m_doc.set_dirty();
     invalidate();
     return TRUE;
 }
 
-struct FURIGANA_NOTIFY : NMHDR {
-    UINT action_id;
-};
-
-LRESULT FuriganaCtl_impl::notify_parent(HWND hwnd, INT code, NMHDR *hdr) {
-    hdr->idFrom = ::GetDlgCtrlID(hwnd);
-    hdr->hwndFrom = hwnd;
-    hdr->code = code;
-    return ::SendMessageW(m_hwndParent, WM_NOTIFY, hdr->idFrom, (LPARAM)hdr);
+LRESULT FuriganaCtl_impl::notify_parent(INT code, FURIGANA_NOTIFY *notify) {
+    notify->idFrom = ::GetDlgCtrlID(m_hwnd);
+    notify->hwndFrom = m_hwnd;
+    notify->code = code;
+    return ::SendMessageW(::GetParent(m_hwnd), WM_NOTIFY, notify->idFrom, (LPARAM)notify);
 }
 
 // WM_RBUTTONUP
 void FuriganaCtl_impl::OnRButtonUp(HWND hwnd, int x, int y, UINT flags) {
     FURIGANA_NOTIFY notify;
     ZeroMemory(&notify, sizeof(notify));
-    if (!notify_parent(hwnd, NM_RCLICK, &notify)) {
+    if (!notify_parent(NM_RCLICK, &notify)) {
         ::PostMessageW(hwnd, WM_CONTEXTMENU, (WPARAM)hwnd, ::GetMessagePos());
     }
+}
+
+void FuriganaCtl_impl::select_all() {
+    ::PostMessageW(m_hwnd, FC_SETSEL, 0, -1);
 }
 
 // コンテキストメニューのアクションを行う
@@ -610,7 +619,7 @@ void FuriganaCtl_impl::do_context_action(UINT id) {
     FURIGANA_NOTIFY notify;
     ZeroMemory(&notify, sizeof(notify));
     notify.action_id = id;
-    if (notify_parent(m_hwnd, FCN_CONTEXTMENUACTION, &notify))
+    if (notify_parent(FCN_CONTEXTMENUACTION, &notify))
         return;
 
     switch (id) {
@@ -621,7 +630,6 @@ void FuriganaCtl_impl::do_context_action(UINT id) {
         OnCopy(m_hwnd, 1);
         break;
     case ID_SELECTALL: // すべて選択
-        ::SetFocus(m_hwnd);
         select_all();
         break;
     default:
@@ -634,7 +642,7 @@ HMENU FuriganaCtl_impl::load_context_menu() {
     // 親のFCN_LOADCONTEXTMENU通知メッセージからコンテキストメニューを用意できるか？
     FURIGANA_NOTIFY notify;
     ZeroMemory(&notify, sizeof(notify));
-    HMENU hMenu = (HMENU)notify_parent(m_hwnd, FCN_LOADCONTEXTMENU, &notify);
+    HMENU hMenu = (HMENU)notify_parent(FCN_LOADCONTEXTMENU, &notify);
     if (hMenu)
         return hMenu;
 
@@ -669,7 +677,7 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
     HMENU hSubMenu = ::GetSubMenu(hMenu, 0);
     if (hSubMenu) {
         // TrackPopupMenuの不具合の回避策
-        SetForegroundWindow(hwnd);
+        ::SetForegroundWindow(hwnd);
 
         UINT uFlags = TPM_RIGHTBUTTON | TPM_RETURNCMD;
         INT id = TrackPopupMenu(hSubMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
@@ -1177,6 +1185,8 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
         return pImpl->OnSetSel((INT)wParam, (INT)lParam);
     case FC_GETSELTEXT:
         return pImpl->OnGetSelText((INT)wParam, (LPWSTR)lParam);
+    case FC_GETSEL:
+        return pImpl->OnGetSel((INT *)wParam, (INT *)lParam);
     default:
         return BaseTextBox::window_proc_inner(hwnd, uMsg, wParam, lParam);
     }

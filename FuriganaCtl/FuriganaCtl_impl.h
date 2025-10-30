@@ -2,6 +2,7 @@
 
 #include "../BaseTextBox/BaseTextBox_impl.h"
 #include "../furigana_gdi/furigana_gdi.h"
+#include "furigana_api.h"
 
 //////////////////////////////////////////////////////////////////////////////
 // FuriganaCtl_impl
@@ -40,7 +41,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
         }
     }
 
-    void select_all() { OnSetSel(0, -1); }
+    void select_all();
     void reset_color(INT iColor);
     void reset_colors();
     UINT get_draw_flags() const;
@@ -51,7 +52,7 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual void update_scroll_info();
     virtual void paint_inner(HWND hwnd, HDC dc, RECT *rect);
     virtual void ensure_visible(INT iPart);
-    virtual LRESULT notify_parent(HWND hwnd, INT code, NMHDR *hdr);
+    virtual LRESULT notify_parent(INT code, FURIGANA_NOTIFY *notify);
     virtual HMENU load_context_menu();
     virtual void do_context_action(UINT id);
 
@@ -82,4 +83,5 @@ struct FuriganaCtl_impl : BaseTextBox_impl {
     virtual LRESULT OnSetSel(INT iStartSel, INT iEndSel);
     virtual LRESULT OnGetSelText(INT cchTextMax, LPWSTR pszText);
     virtual LRESULT OnGetIdealSize(INT type, RECT *prc);
+    virtual LRESULT OnGetSel(INT *piStart, INT *piEnd);
 };
