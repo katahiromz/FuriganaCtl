@@ -15,7 +15,7 @@
 // FC_GETIDEALSIZE - Get ideal size
 #define FC_GETIDEALSIZE (WM_USER + 1004)
 // FC_SETSEL - Set selection
-#define FC_SETSEL (WM_USER + 1005)
+#define FC_SETSEL EM_SETSEL
 // FC_GETSELTEXT - Get selection text
 #define FC_GETSELTEXT (WM_USER + 1006)
 // FC_GETSEL - Get selection

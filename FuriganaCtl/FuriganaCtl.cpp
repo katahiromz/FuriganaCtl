@@ -214,7 +214,7 @@ LRESULT FuriganaCtl_impl::OnSetLineGap(INT line_gap) {
 // WM_SETFOCUS
 void FuriganaCtl_impl::OnSetFocus(HWND hwnd, HWND hwndOldFocus) {
     m_doc.m_set_focus = true;
-    m_doc.set_selection(0, -1);
+    //m_doc.set_selection(0, -1); // DLGC_HASSETSEL
     invalidate();
 }
 
@@ -558,7 +558,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
 
 // WM_GETDLGCODE
 UINT FuriganaCtl_impl::OnGetDlgCode(HWND hwnd, LPMSG lpmsg) {
-    return DLGC_WANTALLKEYS;
+    return DLGC_WANTALLKEYS | DLGC_HASSETSEL;
 }
 
 // WM_RBUTTONDOWN
