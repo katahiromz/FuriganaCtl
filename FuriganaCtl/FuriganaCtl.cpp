@@ -79,27 +79,35 @@ void FuriganaCtl_impl::update_scroll_info() {
     m_doc.get_ideal_size(&rcIdeal, get_draw_flags());
     DPRINTF(L"ideal_size: %ld, %ld\n", rcIdeal.right - rcIdeal.left, rcIdeal.bottom - rcIdeal.top);
 
-    INT pageW = max(0, INT(rc.right - rc.left));
-    INT docW  = max(0, INT(rcIdeal.right - rcIdeal.left));
-    INT maxHorz = max(0, docW);
-
     SCROLLINFO si = { sizeof(si) };
 
-    si.fMask = SIF_PAGE | SIF_RANGE;
-    si.nPage = pageW;
-    si.nMax = maxHorz;
-    ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
-    m_scroll_x = ::GetScrollPos(m_hwnd, SB_HORZ);
+    if (style & ES_AUTOHSCROLL) {
+        INT pageW = max(0, INT(rc.right - rc.left));
+        INT docW  = max(0, INT(rcIdeal.right - rcIdeal.left));
+        INT maxHorz = max(0, docW);
 
-    INT pageH = max(0, INT(rc.bottom - rc.top));
-    INT docH  = max(0, INT(rcIdeal.bottom - rcIdeal.top));
-    INT maxVert = max(0, docH);
+        si.fMask = SIF_PAGE | SIF_RANGE;
+        si.nPage = pageW;
+        si.nMax = maxHorz;
+        ::SetScrollInfo(m_hwnd, SB_HORZ, &si, TRUE);
+        m_scroll_x = ::GetScrollPos(m_hwnd, SB_HORZ);
+    } else {
+        m_scroll_x = 0;
+    }
 
-    si.fMask = SIF_PAGE | SIF_RANGE;
-    si.nPage = pageH;
-    si.nMax = maxVert;
-    ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
-    m_scroll_y = ::GetScrollPos(m_hwnd, SB_VERT);
+    if (style & ES_MULTILINE) {
+        INT pageH = max(0, INT(rc.bottom - rc.top));
+        INT docH  = max(0, INT(rcIdeal.bottom - rcIdeal.top));
+        INT maxVert = max(0, docH);
+
+        si.fMask = SIF_PAGE | SIF_RANGE;
+        si.nPage = pageH;
+        si.nMax = maxVert;
+        ::SetScrollInfo(m_hwnd, SB_VERT, &si, TRUE);
+        m_scroll_y = ::GetScrollPos(m_hwnd, SB_VERT);
+    } else {
+        m_scroll_y = 0;
+    }
 
     m_doc.set_dirty();
     BaseTextBox_impl::invalidate();
