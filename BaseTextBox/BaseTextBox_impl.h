@@ -11,7 +11,6 @@
 struct BaseTextBox_impl {
     BaseTextBox *m_self;
     HWND m_hwnd;
-    HWND m_hwndParent;
     HFONT m_font;
     bool m_own_font;
     std::wstring m_text;
@@ -19,7 +18,6 @@ struct BaseTextBox_impl {
     BaseTextBox_impl(BaseTextBox *self) {
         m_self = self;
         m_hwnd = NULL;
-        m_hwndParent = NULL;
         m_font = NULL;
         m_own_font = false;
     }

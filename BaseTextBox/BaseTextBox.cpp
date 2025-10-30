@@ -21,7 +21,6 @@ void BaseTextBox_impl::invalidate() {
 // WM_CREATE
 BOOL BaseTextBox_impl::OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
     assert(hwnd == m_hwnd);
-    m_hwndParent = ::GetParent(hwnd);
 
     LOGFONTW lf;
     HGDIOBJ hobj = ::GetStockObject(DEFAULT_GUI_FONT);

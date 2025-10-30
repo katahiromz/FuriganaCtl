@@ -308,8 +308,11 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
         ::PostMessageW(hwnd, WM_VSCROLL, MAKELPARAM(SB_PAGEDOWN, 0), 0);
         break;
     case VK_TAB: // Tab key
-        if ((m_self->get_style() & ES_MULTILINE) && m_hwndParent)
-            SendMessageW(m_hwndParent, WM_NEXTDLGCTL, fShift, 0);
+        {
+            DWORD style = m_self->get_style();
+            if ((style & ES_MULTILINE) && (style & WS_CHILD))
+                ::SendMessageW(::GetParent(hwnd), WM_NEXTDLGCTL, fShift, 0);
+        }
         break;
     case VK_UP: // ↑
         {
