@@ -1232,6 +1232,7 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     case DLL_PROCESS_DETACH:
         DPRINTF(L"DLL_PROCESS_DETACH\n");
         FuriganaCtl_unregister();
+        BaseTextBox::class_to_create_map().clear();
         break;
     }
     return TRUE;
