@@ -596,12 +596,20 @@ std::wstring TextDoc::get_selection_text(INT type) {
     switch (type) {
     case 0:
         for (INT iPart = start; iPart < end; ++iPart) {
+            if (iPart < 0)
+                continue;
+            if (iPart >= (INT)m_parts.size())
+                break;
             TextPart& part = m_parts[iPart];
             text += m_text.substr(part.m_base_index, part.m_base_len);
         }
         break;
     case 1:
         for (INT iPart = start; iPart < end; ++iPart) {
+            if (iPart < 0)
+                continue;
+            if (iPart >= (INT)m_parts.size())
+                break;
             TextPart& part = m_parts[iPart];
             text += m_text.substr(part.m_base_index, part.m_base_len);
             if (part.m_ruby_len > 0) {
