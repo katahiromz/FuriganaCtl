@@ -21,14 +21,11 @@ class BaseTextBox;
     static BaseTextBox *create_instance();
 
 #define IMPLEMENT_DYNAMIC(class_name) \
-    /*static*/ BaseTextBox *class_name::create_instance() \
-    { \
+    /*static*/ BaseTextBox *class_name::create_instance() { \
         return new(std::nothrow) class_name(); \
     } \
-    struct class_name##AutoDynamicRegister \
-    { \
-        class_name##AutoDynamicRegister() \
-        { \
+    struct class_name##AutoDynamicRegister { \
+        class_name##AutoDynamicRegister() { \
             std::wstring cls_name = TEXT(#class_name); \
             CharUpperW(&cls_name[0]); \
             BaseTextBox::class_to_create_map()[cls_name.c_str()] = &class_name::create_instance; \

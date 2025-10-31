@@ -1124,6 +1124,7 @@ void FuriganaCtl_impl::paint_inner(HWND hwnd, HDC dc, RECT *rect) {
 IMPLEMENT_DYNAMIC(FuriganaCtl);
 
 FuriganaCtl::FuriganaCtl() {
+    delete m_pimpl;
     m_pimpl = new(std::nothrow) FuriganaCtl_impl(this);
     if (!m_pimpl) {
         OutputDebugStringA("Out of memory!\n");
@@ -1131,7 +1132,10 @@ FuriganaCtl::FuriganaCtl() {
     }
 }
 
-FuriganaCtl::~FuriganaCtl() { }
+FuriganaCtl::~FuriganaCtl() {
+    delete m_pimpl;
+    m_pimpl = NULL;
+}
 
 // ウィンドウ クラスの登録
 BOOL FuriganaCtl::register_class(HINSTANCE inst) {

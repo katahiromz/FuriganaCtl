@@ -145,6 +145,7 @@ BaseTextBox::BaseTextBox() {
 
 BaseTextBox::~BaseTextBox() {
     delete m_pimpl;
+    m_pimpl = NULL;
 }
 
 DWORD BaseTextBox::get_style() const {
