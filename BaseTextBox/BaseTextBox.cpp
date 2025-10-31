@@ -54,7 +54,7 @@ HFONT BaseTextBox_impl::OnGetFont(HWND hwnd) {
 
 // WM_SETFONT
 void BaseTextBox_impl::OnSetFont(HWND hwndCtl, HFONT hfont, BOOL fRedraw) {
-    if (m_font == hfont)
+    if (!hfont)
         return;
 
     if (m_own_font && m_font)
