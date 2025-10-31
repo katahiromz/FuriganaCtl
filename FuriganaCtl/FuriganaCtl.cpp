@@ -288,6 +288,12 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
     if (!fDown)
         return;
 
+    FURIGANA_NOTIFY notify;
+    ZeroMemory(&notify, sizeof(notify));
+    if (notify_parent(NM_KEYDOWN, &notify)) {
+        return;
+    }
+
     BOOL fShift = GetKeyState(VK_SHIFT) < 0;
     BOOL fCtrl = GetKeyState(VK_CONTROL) < 0;
     INT iStart = m_doc.m_selection_start, iEnd = m_doc.m_selection_end;
