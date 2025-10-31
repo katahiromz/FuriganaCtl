@@ -290,6 +290,7 @@ void FuriganaCtl_impl::OnKey(HWND hwnd, UINT vk, BOOL fDown, INT cRepeat, UINT f
 
     FURIGANA_NOTIFY notify;
     ZeroMemory(&notify, sizeof(notify));
+    notify.vk = vk;
     if (notify_parent(NM_KEYDOWN, &notify)) {
         return;
     }
@@ -612,7 +613,8 @@ LRESULT FuriganaCtl_impl::notify_parent(INT code, FURIGANA_NOTIFY *notify) {
     notify->idFrom = ::GetDlgCtrlID(m_hwnd);
     notify->hwndFrom = m_hwnd;
     notify->code = code;
-    return ::SendMessageW(::GetParent(m_hwnd), WM_NOTIFY, notify->idFrom, (LPARAM)notify);
+    HWND hwndParent = ::GetParent(m_hwnd);
+    return ::SendMessageW(hwndParent, WM_NOTIFY, notify->idFrom, (LPARAM)notify);
 }
 
 // WM_RBUTTONUP

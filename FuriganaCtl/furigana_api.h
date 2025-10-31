@@ -39,11 +39,13 @@
 #ifdef __cplusplus
     struct FURIGANA_NOTIFY : NMHDR {
         UINT action_id;
+        UINT vk;
     };
 #else
     typedef struct tagFURIGANA_NOTIFY {
         NMHDR nmhdr;
         UINT action_id;
+        UINT vk;
     } FURIGANA_NOTIFY;
 #endif
 
