@@ -416,6 +416,8 @@ bool TextDoc::get_part_position(INT iPart, INT layout_width, LPPOINT ppt, UINT f
  * @param iEnd パートの終了インデックス。
  */
 void TextDoc::set_selection(INT iStart, INT iEnd) {
+    if (iEnd == MAXLONG)
+        iEnd = (INT)m_parts.size();
     m_selection_start = iStart;
     m_selection_end = iEnd;
 }
