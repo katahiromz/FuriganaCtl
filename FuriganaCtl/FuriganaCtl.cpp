@@ -1203,6 +1203,21 @@ LRESULT CALLBACK FuriganaCtl::window_proc_inner(HWND hwnd, UINT uMsg, WPARAM wPa
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// スタティック ライブラリ用
+
+extern "C"
+BOOL FuriganaCtl_register(void) {
+    BaseTextBox::class_to_create_map()[L"FURIGANACTL"] = FuriganaCtl::create_instance;
+    return FuriganaCtl::register_class(NULL);
+}
+
+extern "C"
+void FuriganaCtl_unregister(void) {
+    FuriganaCtl::unregister_class(NULL);
+    BaseTextBox::class_to_create_map().erase(L"FURIGANACTL");
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // DllMain - DLLのメイン関数
 
 #ifdef FURIGANA_CTL_EXPORT
@@ -1210,13 +1225,13 @@ BOOL WINAPI
 DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
+        DPRINTF(L"DLL_PROCESS_ATTACH\n");
         s_hinst = hinstDLL;
-        OutputDebugStringA("DLL_PROCESS_ATTACH\n");
-        FuriganaCtl::register_class(NULL);
+        FuriganaCtl_register();
         break;
     case DLL_PROCESS_DETACH:
-        OutputDebugStringA("DLL_PROCESS_DETACH\n");
-        FuriganaCtl::unregister_class(NULL);
+        DPRINTF(L"DLL_PROCESS_DETACH\n");
+        FuriganaCtl_unregister();
         break;
     }
     return TRUE;

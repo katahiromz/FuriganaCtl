@@ -1,9 +1,13 @@
 ﻿#pragma once
 
+/////////////////////////////////////////////////////////////////
 // Styles
+
 #define FCS_NOSCROLL 0x4000
 
+/////////////////////////////////////////////////////////////////
 // Messages
+
 // FC_SETRUBYRATIO - Set ruby ratio
 #define FC_SETRUBYRATIO (WM_USER + 1000)
 // FC_SETMARGIN - Set margin
@@ -21,11 +25,38 @@
 // FC_GETSEL - Get selection
 #define FC_GETSEL (WM_USER + 1007)
 
+/////////////////////////////////////////////////////////////////
+// Notification
+
 // FCN_LOADCONTEXTMENU
 #define FCN_LOADCONTEXTMENU (NM_FIRST + 0)
 // FCN_CONTEXTMENUACTION
 #define FCN_CONTEXTMENUACTION (NM_FIRST + 1)
 
-struct FURIGANA_NOTIFY : NMHDR {
-    UINT action_id;
-};
+/////////////////////////////////////////////////////////////////
+// Structures
+
+#ifdef __cplusplus
+    struct FURIGANA_NOTIFY : NMHDR {
+        UINT action_id;
+    };
+#else
+    typedef struct tagFURIGANA_NOTIFY {
+        NMHDR nmhdr;
+        UINT action_id;
+    } FURIGANA_NOTIFY;
+#endif
+
+/////////////////////////////////////////////////////////////////
+// Functions
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+BOOL FuriganaCtl_register(void);
+void FuriganaCtl_unregister(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
