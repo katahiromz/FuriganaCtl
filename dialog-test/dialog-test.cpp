@@ -17,6 +17,16 @@ void SetMulti(HWND hwnd, BOOL multi)
     SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
 }
 
+void SetHScroll(HWND hwnd, BOOL hscroll) {
+    HWND hwndEdt2 = GetDlgItem(hwnd, edt2);
+
+    DWORD style = (DWORD)GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
+    style &= ~ES_AUTOHSCROLL;
+    style |= (hscroll ? ES_AUTOHSCROLL : 0);
+
+    SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
+}
+
 void SetAlign(HWND hwnd, DWORD align)
 {
     HWND hwndEdt2 = GetDlgItem(hwnd, edt2);
@@ -44,12 +54,16 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     SendMessageW(hwndEdt2, FC_SETCOLOR, 1, RGB(255, 255, 0));
 
     bool multi = true;
+    bool hscroll = false;
     DWORD style = (DWORD)GetWindowLongPtrW(hwndEdt2, GWL_STYLE);
     if (multi) style |= ES_MULTILINE;
+    if (hscroll) style |= ES_AUTOHSCROLL;
     SetWindowLongPtrW(hwndEdt2, GWL_STYLE, style);
 
     if (multi)
         CheckDlgButton(hwnd, chx1, BST_CHECKED);
+    if (hscroll)
+        CheckDlgButton(hwnd, chx2, BST_CHECKED);
 
     CheckRadioButton(hwnd, rad1, rad3, rad1);
 
@@ -93,6 +107,9 @@ void OnCommand(HWND hwnd, INT id, HWND hwndCtl, UINT codeNotify)
         break;
     case chx1:
         SetMulti(hwnd, IsDlgButtonChecked(hwnd, chx1) == BST_CHECKED);
+        break;
+    case chx2:
+        SetHScroll(hwnd, IsDlgButtonChecked(hwnd, chx2) == BST_CHECKED);
         break;
     case edt1:
         {
