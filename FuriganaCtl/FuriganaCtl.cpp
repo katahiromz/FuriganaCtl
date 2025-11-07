@@ -690,13 +690,12 @@ void FuriganaCtl_impl::OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UIN
 
     // コンテキストメニューを構築する
     HMENU hMenu = load_context_menu();
-    HMENU hSubMenu = ::GetSubMenu(hMenu, 0);
-    if (hSubMenu) {
+    if (hMenu) {
         // TrackPopupMenuの不具合の回避策
         ::SetForegroundWindow(hwnd);
 
         UINT uFlags = TPM_RIGHTBUTTON | TPM_RETURNCMD;
-        INT id = TrackPopupMenu(hSubMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
+        INT id = TrackPopupMenu(hMenu, uFlags, xPos, yPos, 0, hwnd, NULL);
         if (id) {
             // アクションをする
             do_context_action(id);
